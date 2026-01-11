@@ -428,7 +428,7 @@ app.post('/api/meals', async (req, res) => {
       if (userDoc.exists) {
         const userData = userDoc.data();
         const tier = userData.tier || 'free';
-        let { generationsUsed = 0, nextResetAt } = userData;
+        let { mealGenerationsUsed = 0, nextResetAt } = userData;
         
         // Check if monthly reset is needed
         const now = new Date();
@@ -436,11 +436,11 @@ app.post('/api/meals', async (req, res) => {
         
         if (now >= resetDate) {
           console.log('   resetting monthly usage for user:', userId);
-          generationsUsed = 0;
+          mealGenerationsUsed = 0;
           // Set next reset to 1st of next month
           const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           await userRef.update({
-            generationsUsed: 0,
+            mealGenerationsUsed: 0,
             lastResetAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
             nextResetAt: firebaseAdmin.firestore.Timestamp.fromDate(nextReset),
           });
@@ -448,25 +448,25 @@ app.post('/api/meals', async (req, res) => {
         
         // Check usage limits based on tier
         const tierLimits = {
-          free: 25,
+          free: 30,
           premium: 150,
           pro: 500,
         };
-        const limit = tierLimits[tier] || 25;
+        const limit = tierLimits[tier] || 30;
         
-        if (generationsUsed >= limit) {
-          console.warn('   ⚠️  LIMIT REACHED for user:', userId, `(${generationsUsed}/${limit})`);
+        if (mealGenerationsUsed >= limit) {
+          console.warn('   ⚠️  LIMIT REACHED for user:', userId, `(${mealGenerationsUsed}/${limit})`);
           return res.status(403).json({
             error: 'LIMIT_REACHED',
             message: `You've reached your monthly limit of ${limit} meal generations.`,
             tier,
-            used: generationsUsed,
+            used: mealGenerationsUsed,
             limit,
             nextResetAt: resetDate.toISOString(),
           });
         }
         
-        console.log('   usage check passed:', `${generationsUsed + 1}/${limit}`);
+        console.log('   usage check passed:', `${mealGenerationsUsed + 1}/${limit}`);
       } else {
         // User authenticated but no entitlements doc - create one
         console.log('   creating entitlements for new user:', userId);
@@ -474,7 +474,7 @@ app.post('/api/meals', async (req, res) => {
         await userRef.set({
           tier: 'free',
           status: 'active',
-          generationsUsed: 0,
+          mealGenerationsUsed: 0,
           createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
           lastResetAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
           nextResetAt: firebaseAdmin.firestore.Timestamp.fromDate(nextReset),
@@ -581,7 +581,7 @@ app.post('/api/meals', async (req, res) => {
       const db = getFirestore();
       const userRef = db.collection('users').doc(userId);
       await userRef.update({
-        generationsUsed: firebaseAdmin.firestore.FieldValue.increment(1),
+        mealGenerationsUsed: firebaseAdmin.firestore.FieldValue.increment(1),
       });
       console.log('   incremented usage counter for user:', userId);
     }

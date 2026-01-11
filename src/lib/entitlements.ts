@@ -18,7 +18,7 @@ export interface UserEntitlements {
 // Tier Configuration
 export const TIER_LIMITS = {
   free: {
-    mealGenerationsLimit: 25,
+    mealGenerationsLimit: 30,
     canSeeImages: false,
     canSeeFullMacros: false,
     canSeeRecipeLinks: false,
@@ -43,7 +43,7 @@ export const TIER_LIMITS = {
 
 export const TIER_PRICES = {
   free: 0,
-  premium: 6.99,
+  premium: 9.99,
   pro: null, // Coming soon
 };
 
@@ -97,7 +97,7 @@ export function getTierDisplayName(tier: TierName): string {
 export function getTierFeatures(tier: TierName): string[] {
   const features: Record<TierName, string[]> = {
     free: [
-      '25 meal generations/month',
+      '30 meal generations/month',
       'Fridge + Pantry scanning',
       'Basic meal suggestions',
       'Simple health scores',
