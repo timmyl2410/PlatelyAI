@@ -1,15 +1,17 @@
-// Firebase configuration - REPLACE WITH YOUR VALUES
-// NOTE: This file should ONLY export configuration.
-// Firebase initialization happens in src/lib/firebase.ts.
-const firebaseConfig = {
-  apiKey: "AIzaSyDYSDctgpU-HYP0nN4xbDHuGH2DAN7KpCw",
-  authDomain: "platelyai-45b5e.firebaseapp.com",
-  projectId: "platelyai-45b5e",
-  storageBucket: "platelyai-45b5e.firebasestorage.app",
-  messagingSenderId: "702994060194",
-  appId: "1:702994060194:web:4f13b70492fbf6655e18fb",
-  measurementId: "G-JDJG9FN651",
+// Firebase client configuration
+// IMPORTANT: This config is for frontend/client-side Firebase SDK only
+// Do NOT add admin secrets (FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) here
+// Uses Vite env vars (VITE_*) to prevent secrets from being detected during build
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID ?? "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export default firebaseConfig;
+
 

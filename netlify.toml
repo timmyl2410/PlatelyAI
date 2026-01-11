@@ -1,0 +1,41 @@
+# Netlify Configuration for PlatelyAI
+# This file prevents secrets scanning issues by ensuring proper build settings
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# SPA redirect - ensures client-side routing works
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Environment variable hints for Netlify deployment
+# Set these in Netlify Dashboard > Site settings > Environment variables
+# 
+# Frontend env vars (VITE_* prefix - bundled into client JavaScript):
+#   VITE_FIREBASE_API_KEY
+#   VITE_FIREBASE_AUTH_DOMAIN
+#   VITE_FIREBASE_PROJECT_ID
+#   VITE_FIREBASE_STORAGE_BUCKET
+#   VITE_FIREBASE_MESSAGING_SENDER_ID
+#   VITE_FIREBASE_APP_ID
+#   VITE_FIREBASE_MEASUREMENT_ID (optional)
+#   VITE_BACKEND_URL
+#   VITE_STRIPE_PUBLISHABLE_KEY
+#   VITE_STRIPE_PREMIUM_PRICE_ID
+#
+# Backend/server secrets (not bundled - for Netlify Functions or backend API):
+#   Set these in same place (Netlify env vars) - they're for server-side code:
+#   - OPENAI_API_KEY
+#   - OPENAI_MODEL
+#   - OPENAI_IMAGE_MODEL
+#   - FIREBASE_PRIVATE_KEY
+#   - FIREBASE_CLIENT_EMAIL
+#   - FIREBASE_PROJECT_ID
+#   - FIREBASE_STORAGE_BUCKET
+#   - STRIPE_SECRET_KEY
+#   - STRIPE_WEBHOOK_SECRET
+#   - FRONTEND_URL

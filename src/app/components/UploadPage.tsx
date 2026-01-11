@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { QrCode, Upload, Check, Loader2, Camera, X, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { createSession, getSession, subscribeToSession, uploadImage } from '../../lib/firebase';
+import { useAuth } from '../../lib/useAuth';
 
 const frontendUrl = window.location.origin; // Will be https://myplately.com in production
 
@@ -16,6 +17,7 @@ type SessionData = {
 
 export function UploadPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [fridgeStatus, setFridgeStatus] = useState<UploadStatus>('idle');
   const [pantryStatus, setPantryStatus] = useState<UploadStatus>('idle');
   const [showQR, setShowQR] = useState<'fridge' | 'pantry' | null>(null);
@@ -28,9 +30,24 @@ export function UploadPage() {
   const [isPolling, setIsPolling] = useState(false);
 
   // =========================================================================
+  // AUTH CHECK: Redirect to sign-in if not authenticated
+  // =========================================================================
+  const requireAuth = () => {
+    if (!user) {
+      // Store current page to return after sign-in
+      sessionStorage.setItem('redirectAfterLogin', '/upload');
+      navigate('/signin');
+      return false;
+    }
+    return true;
+  };
+
+  // =========================================================================
   // UX: Show QR for an existing session (don't create a new one)
   // =========================================================================
   const showQrForType = async (type: 'fridge' | 'pantry') => {
+    if (!requireAuth()) return;
+    
     const existingSessionId = type === 'fridge' ? fridgeSessionId : pantrySessionId;
     if (existingSessionId) {
       setShowQR(type);
@@ -130,6 +147,11 @@ export function UploadPage() {
   };
 
   const handleFileUpload = async (type: 'fridge' | 'pantry', e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!requireAuth()) {
+      e.target.value = '';
+      return;
+    }
+    
     const files = e.target.files;
     if (!files || files.length === 0) return;
 

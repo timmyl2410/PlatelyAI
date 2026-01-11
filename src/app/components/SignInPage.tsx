@@ -20,7 +20,10 @@ export function SignInPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/upload');
+      // Redirect to original page or default to /upload
+      const redirectTo = sessionStorage.getItem('redirectAfterLogin') || '/upload';
+      sessionStorage.removeItem('redirectAfterLogin');
+      navigate(redirectTo);
     } catch (error: any) {
       console.error('Sign in error:', error);
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -43,7 +46,10 @@ export function SignInPage() {
     try {
       const authProvider = new GoogleAuthProvider();
       await signInWithPopup(auth, authProvider);
-      navigate('/upload');
+      // Redirect to original page or default to /upload
+      const redirectTo = sessionStorage.getItem('redirectAfterLogin') || '/upload';
+      sessionStorage.removeItem('redirectAfterLogin');
+      navigate(redirectTo);
     } catch (error: any) {
       console.error('Social sign in error:', error);
       if (error.code === 'auth/popup-closed-by-user') {

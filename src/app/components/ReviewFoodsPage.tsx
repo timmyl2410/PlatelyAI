@@ -113,7 +113,7 @@ export function ReviewFoodsPage() {
           return;
         }
 
-        setDebugInfo(`Calling ${backendUrl}/api/scan (imageUrls=${urlsToScan.length})`);
+        setDebugInfo(`Calling /.netlify/functions/scan (imageUrls=${urlsToScan.length})`);
 
         const resp = await fetch(`${backendUrl}/api/scan`, {
           method: 'POST',
