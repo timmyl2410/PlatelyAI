@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/useAuth';
 import { getOrCreateUserEntitlements, incrementMealGenerations } from '../../lib/firestoreUsers';
 import { canGenerateMeal, needsReset, getRemainingGenerations } from '../../lib/entitlements';
 import { UpgradeModal } from './UpgradeModal';
+import { getCurrentInventory } from '../../lib/inventory';
 
 const tips = [
   'Tip: Clearer photos improve ingredient detection accuracy',
@@ -68,7 +69,24 @@ export function LoadingPage() {
           }
         })();
 
-        const ingredients = (ingredientsFromState ?? ingredientsFromStorage ?? []).filter(Boolean);
+        let ingredients = (ingredientsFromState ?? ingredientsFromStorage ?? []).filter(Boolean);
+
+        // TODO: If no ingredients provided, try loading from saved inventory
+        // This allows users to generate meals without rescanning every time
+        if (ingredients.length === 0 && user) {
+          try {
+            console.log('📦 No ingredients provided, checking saved inventory...');
+            const inventory = await getCurrentInventory(user.uid);
+            if (inventory && inventory.items.length > 0) {
+              ingredients = inventory.items.map(item => item.name).filter(Boolean);
+              console.log(`✅ Loaded ${ingredients.length} ingredients from saved inventory`);
+            }
+          } catch (error) {
+            console.error('❌ Failed to load saved inventory (non-blocking):', error);
+            // Continue without inventory - will show error below
+          }
+        }
+
         if (ingredients.length === 0) {
           throw new Error('No ingredients found to generate meals. Go back and scan/upload a photo first.');
         }

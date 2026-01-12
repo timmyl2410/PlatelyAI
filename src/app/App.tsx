@@ -15,6 +15,7 @@ import { ForgotPasswordPage } from './components/ForgotPasswordPage';
 import { AccountPage } from './components/AccountPage';
 import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
 import { TermsOfServicePage } from './components/TermsOfServicePage';
+import { InventoryPage } from './components/InventoryPage';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/mobile-upload" element={<MobileUploadPage />} />
           <Route path="/review" element={<ReviewFoodsPage />} />

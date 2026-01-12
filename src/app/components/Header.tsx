@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Settings, LogOut, ChevronDown, FileText } from 'lucide-react';
+import { Menu, X, Settings, LogOut, ChevronDown, FileText } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
@@ -95,6 +95,13 @@ export function Header() {
             <Link to="/about" className="text-[#2C2C2C] hover:text-[#2ECC71] transition-colors">
               About
             </Link>
+            
+            {/* Inventory Link (for logged-in users) */}
+            {user && (
+              <Link to="/inventory" className="text-[#2C2C2C] hover:text-[#2ECC71] transition-colors">
+                Inventory
+              </Link>
+            )}
             
             {/* View Last Results Button */}
             {hasSavedMeals && (
@@ -222,6 +229,17 @@ export function Header() {
               >
                 About
               </Link>
+
+              {/* Mobile Inventory Link (for logged-in users) */}
+              {user && (
+                <Link
+                  to="/inventory"
+                  className="text-[#2C2C2C] hover:text-[#2ECC71] transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Inventory
+                </Link>
+              )}
 
               {/* Mobile Auth */}
               {user ? (

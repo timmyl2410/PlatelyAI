@@ -1,9 +1,13 @@
 import { Link } from 'react-router-dom';
-import { Camera, Upload, Star, Sparkles, FileText } from 'lucide-react';
+import { Camera, Upload, Star, Sparkles, FileText, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../lib/useAuth';
+import { getCurrentInventory } from '../../lib/inventory';
 
 export function HomePage() {
   const [hasSavedMeals, setHasSavedMeals] = useState(false);
+  const [hasInventory, setHasInventory] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
   // Check if there are saved meals in sessionStorage
   useEffect(() => {
@@ -15,11 +19,48 @@ export function HomePage() {
       setHasSavedMeals(false);
     }
   }, []);
+
+  // Check if user has saved inventory
+  useEffect(() => {
+    if (!user || authLoading) return;
+
+    const checkInventory = async () => {
+      try {
+        const inventory = await getCurrentInventory(user.uid);
+        setHasInventory(inventory !== null && inventory.items.length > 0);
+      } catch {
+        setHasInventory(false);
+      }
+    };
+
+    checkInventory();
+  }, [user, authLoading]);
   // TODO: Re-enable post-launch when we have real testimonials
   /* const testimonials = [
     {
-      name: 'Sarah M.',
-      text: 'PlatelyAI helped me reduce food waste by 60%! I love how it turns random ingredients into delicious meals.',
+      name: 'SarInventory Banner (Priority over meals banner) */}
+      {hasInventory && (
+        <div className="bg-gradient-to-r from-[#2ECC71] to-[#1E8449] py-3">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-white">
+                <Package size={20} />
+                <span style={{ fontWeight: 600 }}>You have a saved inventory</span>
+              </div>
+              <Link
+                to="/inventory"
+                className="px-4 py-2 bg-white text-[#2ECC71] rounded-lg hover:shadow-lg transition-all"
+                style={{ fontWeight: 600, fontSize: '0.875rem' }}
+              >
+                View Inventory
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saved Meals Banner */}
+      {!hasInventory && ext: 'PlatelyAI helped me reduce food waste by 60%! I love how it turns random ingredients into delicious meals.',
       rating: 5,
     },
     {

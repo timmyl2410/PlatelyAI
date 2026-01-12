@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { X, Plus, SlidersHorizontal, HelpCircle } from 'lucide-react';
 import { getSession } from '../../lib/firebase';
 import { CORE_CATEGORIES, categorizeFood } from '../../utils/foodCategorization';
+import { useAuth } from '../../lib/useAuth';
+import { saveCurrentInventory, createInventoryFromScan } from '../../lib/inventory';
 
 type FoodItem = {
   id: string;
@@ -36,6 +38,7 @@ const MIN_INGREDIENTS_REQUIRED = 3;
 export function ReviewFoodsPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const imageUrlsFromState = (location.state as any)?.imageUrls as string[] | undefined;
 
   const queryParams = new URLSearchParams(location.search);
@@ -240,10 +243,29 @@ export function ReviewFoodsPage() {
     setShowCategoryPicker(null);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     try {
       const ingredientNames = foods.map((f) => f.name).filter(Boolean);
       sessionStorage.setItem('plately:lastIngredients', JSON.stringify(ingredientNames));
+
+      // TODO: Save to inventory if user is authenticated
+      // This will store the current ingredient list so they don't need to rescan
+      if (user) {
+        try {
+          // Get the first uploaded image URL to store as "last scan" photo
+          const firstImageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : undefined;
+          
+          // Convert current foods to inventory format
+          const inventory = createInventoryFromScan(foods, firstImageUrl);
+          
+          // Save to Firestore
+          await saveCurrentInventory(user.uid, inventory);
+          console.log('✅ Inventory saved successfully');
+        } catch (error) {
+          console.error('❌ Failed to save inventory (non-blocking):', error);
+          // Don't block meal generation if inventory save fails
+        }
+      }
     } catch {
       // ignore
     }

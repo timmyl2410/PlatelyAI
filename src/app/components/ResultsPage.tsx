@@ -1110,6 +1110,27 @@ export function ResultsPage() {
           reason="premium_feature"
         />
       )}
+
+      {/* Loading Overlay - Shows when generating new meals */}
+      {generating && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+            <div className="text-center">
+              <Loader2 className="w-16 h-16 animate-spin text-[#2ECC71] mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-[#2C2C2C] mb-2">
+                Generating Meals...
+              </h3>
+              <p className="text-gray-600">
+                Creating 5 new personalized meal recommendations based on your ingredients
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-500">
+                <Sparkles className="w-4 h-4 text-[#2ECC71]" />
+                <span>This usually takes 10-15 seconds</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
