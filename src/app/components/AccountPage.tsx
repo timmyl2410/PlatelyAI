@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { User, CreditCard, Bell, Shield, Camera, Mail, Lock, Trash2, Loader2, Check } from 'lucide-react';
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/useAuth';
+import { refetchUserEntitlements } from '../../lib/entitlements';
 
 type Tab = 'profile' | 'billing' | 'notifications' | 'security';
 
 export function AccountPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<Tab>('billing');
   const { user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -50,8 +52,20 @@ export function AccountPage() {
       } catch {
         setPhotoURL(user.photoURL || '');
       }
+
+      // Check if returning from Stripe checkout
+      const sessionId = searchParams.get('session_id');
+      if (sessionId) {
+        // Refetch entitlements to update tier status
+        refetchUserEntitlements(user.uid);
+        // Remove session_id from URL
+        searchParams.delete('session_id');
+        setSearchParams(searchParams, { replace: true });
+        // Show billing tab
+        setActiveTab('billing');
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, searchParams, setSearchParams]);
 
   const handleSignOut = async () => {
     try {
