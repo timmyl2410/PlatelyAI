@@ -58,7 +58,12 @@ export function AccountPage() {
 
       // Load user entitlements
       const loadEntitlements = async () => {
-        const ents = await getUserEntitlements(user.uid);
+        let ents = await getUserEntitlements(user.uid);
+        if (!ents) {
+          // If no entitlements exist, create them
+          const { getOrCreateUserEntitlements } = await import('../../lib/firestoreUsers');
+          ents = await getOrCreateUserEntitlements(user.uid);
+        }
         setEntitlements(ents);
       };
       loadEntitlements();
