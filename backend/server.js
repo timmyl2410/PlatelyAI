@@ -412,16 +412,21 @@ app.post('/api/meals', async (req, res) => {
     const authHeader = req.headers.authorization;
     let userId = null;
     
+    console.log('   Authorization header present:', !!authHeader);
+    
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split('Bearer ')[1];
+      console.log('   Attempting to verify Firebase token...');
       try {
         const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
         userId = decodedToken.uid;
-        console.log('   authenticated user:', userId);
+        console.log('   ✓ authenticated user:', userId);
       } catch (authError) {
-        console.warn('   auth token invalid:', authError.message);
+        console.warn('   ❌ auth token invalid:', authError.message);
         // Continue without auth - free tier anonymous usage
       }
+    } else {
+      console.log('   No Bearer token found in Authorization header');
     }
 
     // If user is authenticated, check their entitlements
