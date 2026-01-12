@@ -27,17 +27,27 @@ export async function handler(event, context) {
       return errorResponse('OPENAI_API_KEY not set', 500, 'Add OPENAI_API_KEY to Netlify environment variables');
     }
 
-    const systemPrompt = 'You are categorizing food items for a food-tracking app called PlatelyAI.';
+    const systemPrompt = 'You are categorizing food items for a food-tracking app. You must be accurate and logical.';
     
-    const userPrompt = `Food item: "${foodName}"
+    const userPrompt = `Categorize this food item: "${foodName}"
 
 Available categories:
-Produce, Meat, Dairy, Grains, Pantry, Frozen, Snacks, Beverages, Condiments, Other
+- Produce (fruits, vegetables)
+- Meat (beef, chicken, pork, fish, seafood, steak, etc.)
+- Dairy (milk, cheese, yogurt, butter, cream)
+- Grains (rice, pasta, bread, cereal, oats)
+- Pantry (oils, spices, flour, sugar, canned goods)
+- Frozen (frozen foods)
+- Snacks (chips, crackers, cookies, candy)
+- Beverages (drinks, liquids, soda, juice, coffee, tea)
+- Condiments (sauces, dressings, ketchup, mayo)
+- Other (if none of the above fit)
 
-Respond with ONLY one category from the list above.
-If none fit well, respond with "Other".
+IMPORTANT: Steak is MEAT. Beef is MEAT. All proteins are MEAT.
 
-No explanations. No extra text. One-word response only.`;
+Respond with ONLY the category name. No explanation. One word only.
+
+Category:`;
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

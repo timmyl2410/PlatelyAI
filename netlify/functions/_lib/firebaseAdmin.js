@@ -23,9 +23,22 @@ export const getFirebaseAdminApp = () => {
     .replace(/^gs:\/\//, '')
     .replace(/\/+$/, '');
 
+  // Detailed logging for debugging
+  console.log('🔍 Firebase Admin env check:');
+  console.log('  FIREBASE_PROJECT_ID:', projectId ? '✓ Set' : '✗ Missing');
+  console.log('  FIREBASE_CLIENT_EMAIL:', clientEmail ? '✓ Set' : '✗ Missing');
+  console.log('  FIREBASE_PRIVATE_KEY:', rawPrivateKey ? `✓ Set (${rawPrivateKey.length} chars)` : '✗ Missing');
+  console.log('  FIREBASE_STORAGE_BUCKET:', storageBucket ? '✓ Set' : '✗ Missing');
+
   if (!projectId || !clientEmail || !rawPrivateKey || !storageBucket) {
+    const missing = [];
+    if (!projectId) missing.push('FIREBASE_PROJECT_ID');
+    if (!clientEmail) missing.push('FIREBASE_CLIENT_EMAIL');
+    if (!rawPrivateKey) missing.push('FIREBASE_PRIVATE_KEY');
+    if (!storageBucket) missing.push('FIREBASE_STORAGE_BUCKET');
+    
     throw new Error(
-      'Missing Firebase Admin env vars. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_STORAGE_BUCKET in Netlify environment variables'
+      `Missing Firebase Admin env vars: ${missing.join(', ')}. Set these in Netlify Dashboard → Site configuration → Environment variables with "Functions" scope enabled.`
     );
   }
 

@@ -18,6 +18,7 @@ const QUICK_MAP: Record<string, string> = {
   // Meat
   chicken: "Meat",
   beef: "Meat",
+  steak: "Meat",
   pork: "Meat",
   turkey: "Meat",
   lamb: "Meat",
@@ -27,6 +28,11 @@ const QUICK_MAP: Record<string, string> = {
   shrimp: "Meat",
   bacon: "Meat",
   sausage: "Meat",
+  ham: "Meat",
+  duck: "Meat",
+  veal: "Meat",
+  ground: "Meat",
+  ribs: "Meat",
   
   // Dairy
   milk: "Dairy",
