@@ -602,11 +602,11 @@ export function ResultsPage() {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Easy':
-        return 'text-[#2ECC71] bg-[#2ECC71] bg-opacity-10';
+        return 'text-white bg-[#2ECC71]';
       case 'Medium':
-        return 'text-[#F4D03F] bg-[#F4D03F] bg-opacity-20';
+        return 'text-white bg-[#F4D03F]';
       case 'Hard':
-        return 'text-[#e74c3c] bg-[#e74c3c] bg-opacity-10';
+        return 'text-white bg-[#e74c3c]';
       default:
         return 'text-gray-600 bg-gray-100';
     }

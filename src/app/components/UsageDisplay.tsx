@@ -28,7 +28,7 @@ export function UsageDisplay() {
     <div className="bg-white rounded-xl p-4 border border-gray-200">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold text-gray-700">Monthly Usage</span>
-        <span className="text-xs px-2 py-1 bg-[#2ECC71] bg-opacity-10 text-[#2ECC71] rounded-full" style={{ fontWeight: 600 }}>
+        <span className="text-xs px-2 py-1 bg-[#2ECC71] text-white rounded-full" style={{ fontWeight: 600 }}>
           {getTierDisplayName(entitlements.tier)}
         </span>
       </div>
