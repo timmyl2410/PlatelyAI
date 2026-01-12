@@ -5,6 +5,8 @@ import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCre
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/useAuth';
 import { getUserEntitlements } from '../../lib/firestoreUsers';
+import { TIER_PRICES, getTierDisplayName, getTierFeatures } from '../../lib/entitlements';
+import type { UserEntitlements } from '../../lib/entitlements';
 
 type Tab = 'profile' | 'billing' | 'notifications' | 'security';
 
@@ -16,6 +18,7 @@ export function AccountPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [entitlements, setEntitlements] = useState<UserEntitlements | null>(null);
 
   // Profile form
   const [name, setName] = useState('');
@@ -53,11 +56,21 @@ export function AccountPage() {
         setPhotoURL(user.photoURL || '');
       }
 
+      // Load user entitlements
+      const loadEntitlements = async () => {
+        const ents = await getUserEntitlements(user.uid);
+        setEntitlements(ents);
+      };
+      loadEntitlements();
+
       // Check if returning from Stripe checkout
       const sessionId = searchParams.get('session_id');
       if (sessionId) {
-        // Refetch entitlements to update tier status
-        getUserEntitlements(user.uid);
+        // Wait a moment for webhook to process, then refetch
+        setTimeout(async () => {
+          const ents = await getUserEntitlements(user.uid);
+          setEntitlements(ents);
+        }, 2000);
         // Remove session_id from URL
         searchParams.delete('session_id');
         setSearchParams(searchParams, { replace: true });
@@ -436,20 +449,31 @@ export function AccountPage() {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h4 className="text-xl" style={{ fontWeight: 700, color: '#2C2C2C' }}>
-                            Free Plan
+                            {entitlements ? getTierDisplayName(entitlements.tier) : 'Free Plan'}
                           </h4>
-                          <p className="text-gray-600 text-sm">5 meal generations per month</p>
+                          <p className="text-gray-600 text-sm">
+                            {entitlements 
+                              ? `${entitlements.mealGenerationsUsed}/${entitlements.mealGenerationsLimit} meal generations used this month`
+                              : '0/30 meal generations used this month'
+                            }
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl" style={{ fontWeight: 700, color: '#2ECC71' }}>
-                            $0
+                            ${entitlements ? TIER_PRICES[entitlements.tier] : 0}
                           </p>
                           <p className="text-sm text-gray-600">per month</p>
                         </div>
                       </div>
-                      <button className="w-full py-3 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all" style={{ fontWeight: 600 }}>
-                        Upgrade to Pro
-                      </button>
+                      {(!entitlements || entitlements.tier === 'free') && (
+                        <button 
+                          onClick={() => navigate('/pricing')}
+                          className="w-full py-3 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all" 
+                          style={{ fontWeight: 600 }}
+                        >
+                          Upgrade to Premium
+                        </button>
+                      )}
                     </div>
                   </div>
 
