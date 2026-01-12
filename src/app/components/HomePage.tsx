@@ -61,7 +61,6 @@ export function HomePage() {
 
       {/* Saved Meals Banner */}
       {!hasInventory && hasSavedMeals && (
-      {hasSavedMeals && (
         <div className="bg-gradient-to-r from-[#2ECC71] to-[#1E8449] py-3">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
