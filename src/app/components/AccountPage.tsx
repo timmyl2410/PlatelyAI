@@ -56,31 +56,31 @@ export function AccountPage() {
         setPhotoURL(user.photoURL || '');
       }
 
-      // Load user entitlements
-      const loadEntitlements = async () => {
-        let ents = await getUserEntitlements(user.uid);
-        if (!ents) {
-          // If no entitlements exist, create them
-          const { getOrCreateUserEntitlements } = await import('../../lib/firestoreUsers');
-          ents = await getOrCreateUserEntitlements(user.uid);
-        }
-        setEntitlements(ents);
-      };
-      loadEntitlements();
-
       // Check if returning from Stripe checkout
       const sessionId = searchParams.get('session_id');
       if (sessionId) {
-        // Wait a moment for webhook to process, then refetch
+        // Wait for webhook to process, then fetch entitlements (don't create)
         setTimeout(async () => {
           const ents = await getUserEntitlements(user.uid);
           setEntitlements(ents);
-        }, 2000);
+        }, 3000); // Increased to 3 seconds
         // Remove session_id from URL
         searchParams.delete('session_id');
         setSearchParams(searchParams, { replace: true });
         // Show billing tab
         setActiveTab('billing');
+      } else {
+        // Normal page load - get or create entitlements
+        const loadEntitlements = async () => {
+          let ents = await getUserEntitlements(user.uid);
+          if (!ents) {
+            // If no entitlements exist, create them
+            const { getOrCreateUserEntitlements } = await import('../../lib/firestoreUsers');
+            ents = await getOrCreateUserEntitlements(user.uid);
+          }
+          setEntitlements(ents);
+        };
+        loadEntitlements();
       }
     }
   }, [user, loading, navigate, searchParams, setSearchParams]);
