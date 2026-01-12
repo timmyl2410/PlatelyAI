@@ -57,12 +57,22 @@ export async function handler(event, context) {
         if (userId) {
           console.log(`✓ Payment successful for user ${userId}`);
           
+          // Get subscription details to fetch currentPeriodEnd
+          let currentPeriodEnd = null;
+          if (session.subscription) {
+            const stripe = getStripeClient();
+            const subscription = await stripe.subscriptions.retrieve(session.subscription);
+            currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+          }
+          
           // Update user tier in Firestore
           await db.collection('userEntitlements').doc(userId).set(
             {
               tier: 'premium',
               stripeCustomerId: session.customer,
               stripeSubscriptionId: session.subscription,
+              subscriptionStatus: 'active',
+              currentPeriodEnd: currentPeriodEnd,
               updatedAt: new Date().toISOString(),
             },
             { merge: true }
@@ -90,9 +100,12 @@ export async function handler(event, context) {
 
           // Update tier based on subscription status
           const tier = status === 'active' ? 'premium' : 'free';
+          const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+          
           await doc.ref.update({
             tier: tier,
             subscriptionStatus: status,
+            currentPeriodEnd: currentPeriodEnd,
             updatedAt: new Date().toISOString(),
           });
 

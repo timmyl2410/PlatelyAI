@@ -19,6 +19,8 @@ export function AccountPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState('');
   const [entitlements, setEntitlements] = useState<UserEntitlements | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [subscriptionUpdated, setSubscriptionUpdated] = useState(false);
 
   // Profile form
   const [name, setName] = useState('');
@@ -58,14 +60,24 @@ export function AccountPage() {
 
       // Check if returning from Stripe checkout
       const sessionId = searchParams.get('session_id');
-      if (sessionId) {
-        // Wait for webhook to process, then fetch entitlements (don't create)
+      const updated = searchParams.get('updated');
+      
+      if (sessionId || updated) {
+        // Wait for webhook to process, then fetch entitlements
         setTimeout(async () => {
           const ents = await getUserEntitlements(user.uid);
           setEntitlements(ents);
-        }, 3000); // Increased to 3 seconds
-        // Remove session_id from URL
+          
+          // Show success message if returning from billing portal
+          if (updated === 'true') {
+            setSubscriptionUpdated(true);
+            setTimeout(() => setSubscriptionUpdated(false), 5000);
+          }
+        }, 3000);
+        
+        // Remove query params from URL
         searchParams.delete('session_id');
+        searchParams.delete('updated');
         setSearchParams(searchParams, { replace: true });
         // Show billing tab
         setActiveTab('billing');
@@ -91,6 +103,36 @@ export function AccountPage() {
       navigate('/');
     } catch (error) {
       console.error('Sign out error:', error);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (!user) return;
+    
+    setBillingLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch('/.netlify/functions/create-billing-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create billing portal session');
+      }
+      
+      // Redirect to Stripe billing portal
+      window.location.href = data.url;
+    } catch (error: any) {
+      console.error('Billing portal error:', error);
+      setError(error.message || 'Failed to open billing portal. Please try again.');
+      setBillingLoading(false);
     }
   };
 
@@ -445,6 +487,14 @@ export function AccountPage() {
                     Billing & Subscription
                   </h2>
 
+                  {/* Success Message */}
+                  {subscriptionUpdated && (
+                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-600" />
+                      <p className="text-green-800 font-medium">Subscription updated successfully</p>
+                    </div>
+                  )}
+
                   {/* Current Plan */}
                   <div className="mb-8">
                     <h3 className="text-lg mb-4" style={{ fontWeight: 600, color: '#2C2C2C' }}>
@@ -462,6 +512,11 @@ export function AccountPage() {
                               : '0/30 meal generations used this month'
                             }
                           </p>
+                          {entitlements && entitlements.tier !== 'free' && entitlements.currentPeriodEnd && (
+                            <p className="text-gray-500 text-xs mt-1">
+                              Renews on {new Date(entitlements.currentPeriodEnd).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-2xl" style={{ fontWeight: 700, color: '#2ECC71' }}>
@@ -470,14 +525,42 @@ export function AccountPage() {
                           <p className="text-sm text-gray-600">per month</p>
                         </div>
                       </div>
-                      {(!entitlements || entitlements.tier === 'free') && (
-                        <button 
-                          onClick={() => navigate('/pricing')}
-                          className="w-full py-3 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all" 
-                          style={{ fontWeight: 600 }}
-                        >
-                          Upgrade to Premium
-                        </button>
+                      
+                      <div className="flex gap-3">
+                        {(!entitlements || entitlements.tier === 'free') ? (
+                          <button 
+                            onClick={() => navigate('/pricing')}
+                            className="flex-1 py-3 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all" 
+                            style={{ fontWeight: 600 }}
+                          >
+                            Upgrade to Premium
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={handleManageSubscription}
+                            disabled={billingLoading}
+                            className="flex-1 py-3 bg-white border-2 border-[#2ECC71] text-[#2ECC71] rounded-xl hover:bg-[#2ECC71] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" 
+                            style={{ fontWeight: 600 }}
+                          >
+                            {billingLoading ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="w-5 h-5" />
+                                Manage Subscription
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      
+                      {entitlements && entitlements.tier !== 'free' && (
+                        <p className="text-xs text-gray-500 mt-3 text-center">
+                          Cancel or update payment method via Stripe
+                        </p>
                       )}
                     </div>
                   </div>
@@ -488,7 +571,10 @@ export function AccountPage() {
                       Payment Methods
                     </h3>
                     <div className="text-center py-8 text-gray-500">
-                      No payment methods added yet
+                      {entitlements && entitlements.tier !== 'free' 
+                        ? 'Manage payment methods in the billing portal above'
+                        : 'No payment methods added yet'
+                      }
                     </div>
                   </div>
 
@@ -498,7 +584,10 @@ export function AccountPage() {
                       Billing History
                     </h3>
                     <div className="text-center py-8 text-gray-500">
-                      No billing history available
+                      {entitlements && entitlements.tier !== 'free'
+                        ? 'View invoices in the billing portal above'
+                        : 'No billing history available'
+                      }
                     </div>
                   </div>
                 </div>

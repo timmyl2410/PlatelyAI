@@ -22,7 +22,7 @@ export type InventoryItem = {
 
 export type LastScan = {
   photoUrl: string;
-  scannedAt: Date;
+  scannedAt: Date | { toDate: () => Date }; // Support both Date and Firestore Timestamp
 };
 
 export type Inventory = {
@@ -64,9 +64,19 @@ export const getCurrentInventory = async (uid: string): Promise<Inventory | null
     if (docSnap.exists()) {
       const data = docSnap.data();
       console.log('✅ Inventory found:', data);
+      
+      // Convert Firestore Timestamps to Dates
+      let lastScan = data.lastScan;
+      if (lastScan?.scannedAt) {
+        lastScan = {
+          ...lastScan,
+          scannedAt: lastScan.scannedAt.toDate ? lastScan.scannedAt.toDate() : lastScan.scannedAt
+        };
+      }
+      
       return {
         items: data.items || [],
-        lastScan: data.lastScan,
+        lastScan,
         updatedAt: data.updatedAt?.toDate() || new Date(),
       };
     } else {
@@ -105,9 +115,15 @@ export const saveCurrentInventory = async (
       return acc;
     }, [] as InventoryItem[]);
 
+    // Prepare lastScan with server timestamp if it's new
+    const lastScanToSave = inventory.lastScan ? {
+      photoUrl: inventory.lastScan.photoUrl,
+      scannedAt: serverTimestamp(), // Always use server time for accuracy
+    } : undefined;
+
     await setDoc(docRef, {
       items: uniqueItems,
-      lastScan: inventory.lastScan,
+      ...(lastScanToSave && { lastScan: lastScanToSave }),
       updatedAt: serverTimestamp(),
     });
 

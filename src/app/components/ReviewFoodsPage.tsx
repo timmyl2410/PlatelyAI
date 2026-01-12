@@ -63,7 +63,7 @@ export function ReviewFoodsPage() {
   const [newFood, setNewFood] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
+  const [scanProgress, setScanProgress] = useState(0);
   const [goal, setGoal] = useState<DietGoal>('maintain');
   const [filters, setFilters] = useState<Set<DietaryFilter>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
@@ -79,14 +79,14 @@ export function ReviewFoodsPage() {
       try {
         setLoading(true);
         setLoadError(null);
-        setDebugInfo('');
+        setScanProgress(10);
 
         // 1) Prefer explicit imageUrls (passed from Upload)
         // 2) Otherwise, try recovering image URLs from Firestore session IDs
         let urlsToScan: string[] | undefined = imageUrls;
 
         if ((!urlsToScan || urlsToScan.length === 0) && (fridgeSessionId || pantrySessionId)) {
-          setDebugInfo(`Recovering imageUrls from session(s). backendUrl=${backendUrl}`);
+          setScanProgress(20);
 
           const recovered: string[] = [];
           const sessionIds = [fridgeSessionId, pantrySessionId].filter(Boolean) as string[];
@@ -112,11 +112,11 @@ export function ReviewFoodsPage() {
         if (!urlsToScan || urlsToScan.length === 0) {
           setFoods([]);
           setLoading(false);
-          setDebugInfo(`No imageUrls provided. backendUrl=${backendUrl}`);
+          setScanProgress(0);
           return;
         }
 
-        setDebugInfo(`Calling /.netlify/functions/scan (imageUrls=${urlsToScan.length})`);
+        setScanProgress(40);
 
         const resp = await fetch(`${backendUrl}/api/scan`, {
           method: 'POST',
@@ -129,9 +129,11 @@ export function ReviewFoodsPage() {
           throw new Error(data?.error || 'Scan failed');
         }
 
-        setDebugInfo((prev) => `${prev} → OK (foods=${Array.isArray(data?.foods) ? data.foods.length : 0})`);
+        setScanProgress(60);
 
         const scannedFoods = (data?.foods || []).filter((f: any) => f && f.name);
+        
+        setScanProgress(70);
         
         // Categorize each food using our 3-layer system
         const categorizedFoods: FoodItem[] = [];
@@ -151,6 +153,7 @@ export function ReviewFoodsPage() {
         }
 
         if (!cancelled) {
+          setScanProgress(100);
           setFoods(categorizedFoods);
           setLoading(false);
         }
@@ -159,7 +162,7 @@ export function ReviewFoodsPage() {
           setLoadError(e instanceof Error ? e.message : 'Scan failed');
           setFoods([]);
           setLoading(false);
-          setDebugInfo((prev) => `${prev} → ERROR`);
+          setScanProgress(0);
         }
       }
     };
@@ -330,11 +333,6 @@ export function ReviewFoodsPage() {
           {!loading && !loadError && (!imageUrls || imageUrls.length === 0) && (
             <p className="text-sm text-gray-500 mt-2">
               No uploaded images were found to scan. Go back and upload via the QR flow (so we have image URLs).
-            </p>
-          )}
-          {debugInfo && (
-            <p className="text-xs text-gray-500 mt-2 break-words">
-              {debugInfo}
             </p>
           )}
         </div>
@@ -544,6 +542,35 @@ export function ReviewFoodsPage() {
           )}
         </div>
       </div>
+
+      {/* Loading Overlay with Progress Bar */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 relative">
+                <div className="absolute inset-0 border-4 border-[#2ECC71]/20 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-[#2ECC71] rounded-full border-t-transparent animate-spin"></div>
+              </div>
+              <h3 className="text-2xl font-bold text-[#2C2C2C] mb-2">
+                Scanning Your Photos
+              </h3>
+              <p className="text-gray-600 mb-6">
+                AI is detecting ingredients from your images...
+              </p>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-2 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-[#2ECC71] to-[#1E8449] h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${scanProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-500">{scanProgress}%</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

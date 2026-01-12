@@ -13,6 +13,8 @@ export interface UserEntitlements {
   nextResetAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  currentPeriodEnd?: string; // ISO date string from Stripe
+  subscriptionStatus?: string; // Stripe subscription status
 }
 
 // Tier Configuration

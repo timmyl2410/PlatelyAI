@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Camera, Loader2, Save, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Camera, Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 import {
   getCurrentInventory,
@@ -8,10 +8,26 @@ import {
   type Inventory,
   type InventoryItem,
   normalizeIngredientName,
+  toTitleCase,
 } from '../../lib/inventory';
+import { categorizeFood } from '../../utils/foodCategorization';
+
+// Category order for display
+const CATEGORY_ORDER = [
+  "Produce",
+  "Meat",
+  "Dairy",
+  "Grains",
+  "Pantry",
+  "Frozen",
+  "Snacks",
+  "Beverages",
+  "Condiments",
+  "Other"
+];
 
 // ============================================================================
-// INVENTORY EDITOR COMPONENT (Pure UI)
+// INVENTORY EDITOR COMPONENT
 // ============================================================================
 
 type InventoryEditorProps = {
@@ -26,20 +42,29 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
   const [items, setItems] = useState<InventoryItem[]>(inventory.items);
   const [newItemName, setNewItemName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [showSavedCheck, setShowSavedCheck] = useState(false);
 
-  // Track changes
+  // Auto-save with minimal delay
   useEffect(() => {
-    const itemsChanged =
-      items.length !== inventory.items.length ||
-      !items.every(item => {
-        const original = inventory.items.find(i => i.id === item.id);
-        return original && original.name === item.name;
-      });
-    setHasChanges(itemsChanged);
-  }, [items, inventory.items]);
+    const saveTimer = setTimeout(async () => {
+      if (JSON.stringify(items) !== JSON.stringify(inventory.items)) {
+        setSaving(true);
+        try {
+          await onSave(items);
+          setShowSavedCheck(true);
+          setTimeout(() => setShowSavedCheck(false), 2000);
+        } catch (error) {
+          console.error('Failed to save:', error);
+        } finally {
+          setSaving(false);
+        }
+      }
+    }, 500);
 
-  const handleAddItem = () => {
+    return () => clearTimeout(saveTimer);
+  }, [items]);
+
+  const handleAddItem = async () => {
     const trimmed = newItemName.trim();
     if (!trimmed) return;
 
@@ -52,11 +77,16 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
       return;
     }
 
+    // Auto-categorize with existing AI logic
+    const titleCased = toTitleCase(trimmed);
+    const categoryResult = await categorizeFood(titleCased, 'http://localhost:5000');
+
     const newItem: InventoryItem = {
       id: `user_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      name: trimmed,
+      name: titleCased,
       addedBy: 'user',
       updatedAt: new Date(),
+      category: categoryResult.category,
     };
 
     setItems([...items, newItem]);
@@ -67,37 +97,37 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
     setItems(items.filter(item => item.id !== id));
   };
 
-  const handleUpdateItemName = (id: string, newName: string) => {
+  const handleUpdateItemName = async (id: string, newName: string) => {
+    // Re-categorize on name change
+    const categoryResult = await categorizeFood(newName, 'http://localhost:5000');
     setItems(
       items.map(item =>
         item.id === id
-          ? { ...item, name: newName, updatedAt: new Date() }
+          ? { ...item, name: newName, updatedAt: new Date(), category: categoryResult.category }
           : item
       )
     );
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await onSave(items);
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Failed to save:', error);
-      alert('Failed to save inventory. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return 'Unknown';
+  const formatDate = (date: Date | { toDate: () => Date } | undefined) => {
+    if (!date) return 'Not scanned yet';
+    const actualDate = typeof date === 'object' && 'toDate' in date ? date.toDate() : date;
+    const parsedDate = new Date(actualDate);
+    if (isNaN(parsedDate.getTime())) return 'Not scanned yet';
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    }).format(date);
+    }).format(parsedDate);
   };
+
+  // Group items by category
+  const groupedItems = items.reduce((acc, item) => {
+    const category = item.category || 'Other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, InventoryItem[]>);
 
   return (
     <div className="space-y-6">
@@ -120,6 +150,12 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
                 {items.length} {items.length === 1 ? 'item' : 'items'} in inventory
               </p>
             </div>
+            {showSavedCheck && (
+              <div className="flex items-center gap-1 text-[#2ECC71]">
+                <Check className="w-4 h-4" />
+                <span className="text-sm font-medium">Saved</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -151,7 +187,7 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
         </div>
       </div>
 
-      {/* Items List */}
+      {/* Items List - Grouped by Category */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold mb-4 text-[#2C2C2C]">Your Ingredients</h3>
 
@@ -160,28 +196,37 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
             No ingredients yet. Add some above or scan your fridge!
           </p>
         ) : (
-          <div className="space-y-2">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => handleUpdateItemName(item.id, e.target.value)}
-                  className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#2ECC71] rounded"
-                />
-                <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
-                  {item.addedBy === 'ai' ? 'AI' : 'Manual'}
-                </span>
-                <button
-                  onClick={() => handleRemoveItem(item.id)}
-                  className="text-red-500 hover:text-red-700 p-1"
-                  title="Remove item"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+          <div className="space-y-6">
+            {CATEGORY_ORDER.filter(category => groupedItems[category]?.length > 0).map(category => (
+              <div key={category}>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                  {category}
+                </h4>
+                <div className="space-y-2">
+                  {groupedItems[category].map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => handleUpdateItemName(item.id, e.target.value)}
+                        className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#2ECC71] rounded"
+                      />
+                      <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
+                        {item.addedBy === 'ai' ? 'AI' : 'Manual'}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -193,48 +238,26 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
         {/* Primary CTA: Generate Meals */}
         <button
           onClick={onGenerateMeals}
-          disabled={items.length === 0 || hasChanges}
+          disabled={items.length === 0 || saving}
           className={`w-full py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-            items.length > 0 && !hasChanges
+            items.length > 0 && !saving
               ? 'bg-[#2ECC71] text-white hover:bg-[#27AE60] shadow-lg hover:shadow-xl'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
           <Sparkles className="w-5 h-5" />
-          {hasChanges ? 'Save Changes First' : items.length === 0 ? 'Add Items First' : 'Generate Meals from Inventory'}
+          {items.length === 0 ? 'Add Items First' : saving ? 'Saving...' : 'Generate Meals from Inventory'}
         </button>
 
         {/* Secondary Actions */}
         <div className="flex gap-3">
           <button
-            onClick={handleSave}
-            disabled={!hasChanges || saving}
-            className={`flex-1 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
-              hasChanges && !saving
-                ? 'bg-[#2ECC71] text-white hover:bg-[#27AE60]'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                {hasChanges ? 'Save Changes' : 'No Changes'}
-              </>
-            )}
-          </button>
-
-          <button
             onClick={onRescan}
             disabled={loading}
-            className="px-6 py-3 bg-white border-2 border-[#2ECC71] text-[#2ECC71] rounded-lg font-semibold hover:bg-[#2ECC71] hover:text-white transition-colors flex items-center gap-2"
+            className="flex-1 px-6 py-3 bg-white border-2 border-[#2ECC71] text-[#2ECC71] rounded-lg font-semibold hover:bg-[#2ECC71] hover:text-white transition-colors flex items-center justify-center gap-2"
           >
             <Camera className="w-5 h-5" />
-            Rescan
+            Rescan Fridge
           </button>
         </div>
       </div>
