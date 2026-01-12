@@ -427,7 +427,7 @@ app.post('/api/meals', async (req, res) => {
     // If user is authenticated, check their entitlements
     if (userId) {
       const db = getFirestore();
-      const userRef = db.collection('users').doc(userId);
+      const userRef = db.collection('userEntitlements').doc(userId);
       const userDoc = await userRef.get();
       
       if (userDoc.exists) {
@@ -584,7 +584,7 @@ app.post('/api/meals', async (req, res) => {
     // Increment usage counter after successful generation
     if (userId) {
       const db = getFirestore();
-      const userRef = db.collection('users').doc(userId);
+      const userRef = db.collection('userEntitlements').doc(userId);
       await userRef.update({
         mealGenerationsUsed: firebaseAdmin.firestore.FieldValue.increment(1),
       });
