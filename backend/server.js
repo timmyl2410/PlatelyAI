@@ -18,8 +18,17 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// Middleware - CORS with optimized settings
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400, // Cache preflight for 24 hours
+}));
+
+// Handle OPTIONS requests explicitly for faster response
+app.options('*', cors());
 
 // Stripe webhook needs raw body - must come before express.json()
 app.use('/api/stripe-webhook', express.raw({ type: 'application/json' }));
