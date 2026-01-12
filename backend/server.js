@@ -588,13 +588,15 @@ app.post('/api/meals', async (req, res) => {
     console.log('   meals generated:', sanitized.length);
     
     // Increment usage counter after successful generation
+    // Each meal generated counts as 1 generation
     if (userId) {
       const db = getFirestore();
       const userRef = db.collection('userEntitlements').doc(userId);
+      const mealsGenerated = sanitized.length;
       await userRef.update({
-        mealGenerationsUsed: firebaseAdmin.firestore.FieldValue.increment(1),
+        mealGenerationsUsed: firebaseAdmin.firestore.FieldValue.increment(mealsGenerated),
       });
-      console.log('   incremented usage counter for user:', userId);
+      console.log(`   incremented usage counter by ${mealsGenerated} for user:`, userId);
     }
     
     return res.json({ meals: sanitized });
