@@ -9,7 +9,7 @@ const db = getFirestore(app);
 
 export async function getUserEntitlements(uid: string): Promise<UserEntitlements | null> {
   try {
-    const userDoc = await getDoc(doc(db, 'users', uid));
+    const userDoc = await getDoc(doc(db, 'userEntitlements', uid));
     
     if (!userDoc.exists()) {
       return null;
@@ -50,7 +50,7 @@ export async function createUserEntitlements(uid: string): Promise<UserEntitleme
   };
 
   try {
-    await setDoc(doc(db, 'users', uid), {
+    await setDoc(doc(db, 'userEntitlements', uid), {
       tier: entitlements.tier,
       tierStatus: entitlements.tierStatus,
       mealGenerationsUsed: entitlements.mealGenerationsUsed,
@@ -80,7 +80,7 @@ export async function getOrCreateUserEntitlements(uid: string): Promise<UserEnti
 
 export async function updateUserTier(uid: string, tier: TierName): Promise<void> {
   try {
-    await updateDoc(doc(db, 'users', uid), {
+    await updateDoc(doc(db, 'userEntitlements', uid), {
       tier,
       mealGenerationsLimit: TIER_LIMITS[tier].mealGenerationsLimit,
       updatedAt: Timestamp.fromDate(new Date()),
@@ -93,7 +93,7 @@ export async function updateUserTier(uid: string, tier: TierName): Promise<void>
 
 export async function incrementMealGenerations(uid: string): Promise<void> {
   try {
-    const userRef = doc(db, 'users', uid);
+    const userRef = doc(db, 'userEntitlements', uid);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
@@ -117,7 +117,7 @@ export async function resetMonthlyUsage(uid: string): Promise<void> {
     const now = new Date();
     const nextReset = getNextResetDate(now);
 
-    await updateDoc(doc(db, 'users', uid), {
+    await updateDoc(doc(db, 'userEntitlements', uid), {
       mealGenerationsUsed: 0,
       billingPeriodStart: Timestamp.fromDate(now),
       nextResetAt: Timestamp.fromDate(nextReset),
