@@ -36,6 +36,10 @@ export async function getUserEntitlements(uid: string): Promise<UserEntitlements
       nextResetAt: toDate(data.nextResetAt),
       createdAt: toDate(data.createdAt),
       updatedAt: toDate(data.updatedAt),
+      currentPeriodEnd: data.currentPeriodEnd,
+      subscriptionStatus: data.subscriptionStatus,
+      stripeCustomerId: data.stripeCustomerId,
+      stripeSubscriptionId: data.stripeSubscriptionId,
     };
   } catch (error) {
     console.error('Error fetching user entitlements:', error);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { X, Plus, SlidersHorizontal, HelpCircle } from 'lucide-react';
+import { X, Plus, SlidersHorizontal, HelpCircle, Check } from 'lucide-react';
 import { getSession } from '../../lib/firebase';
 import { CORE_CATEGORIES, categorizeFood } from '../../utils/foodCategorization';
 import { useAuth } from '../../lib/useAuth';
@@ -69,6 +69,7 @@ export function ReviewFoodsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [categorizingFoods, setCategorizingFoods] = useState<Set<string>>(new Set());
   const [showCategoryPicker, setShowCategoryPicker] = useState<string | null>(null);
+  const [inventorySaved, setInventorySaved] = useState(false);
 
   const categories = [...CORE_CATEGORIES];
 
@@ -129,16 +130,18 @@ export function ReviewFoodsPage() {
           throw new Error(data?.error || 'Scan failed');
         }
 
-        setScanProgress(60);
+        setScanProgress(50);
 
         const scannedFoods = (data?.foods || []).filter((f: any) => f && f.name);
         
-        setScanProgress(70);
+        setScanProgress(60);
         
         // Categorize each food using our 3-layer system
         const categorizedFoods: FoodItem[] = [];
+        const totalFoods = scannedFoods.length;
         
-        for (const food of scannedFoods) {
+        for (let i = 0; i < scannedFoods.length; i++) {
+          const food = scannedFoods[i];
           const foodName = String(food.name).trim();
           const result = await categorizeFood(foodName, backendUrl);
           
@@ -150,6 +153,10 @@ export function ReviewFoodsPage() {
             source: result.source,
             confidence: result.confidence,
           });
+          
+          // Gradually increase progress from 60% to 95% as we categorize
+          const progress = 60 + Math.floor((i + 1) / totalFoods * 35);
+          setScanProgress(progress);
         }
 
         if (!cancelled) {
@@ -263,6 +270,7 @@ export function ReviewFoodsPage() {
           
           // Save to Firestore
           await saveCurrentInventory(user.uid, inventory);
+          setInventorySaved(true);
           console.log('✅ Inventory saved successfully');
         } catch (error) {
           console.error('❌ Failed to save inventory (non-blocking):', error);
@@ -535,6 +543,12 @@ export function ReviewFoodsPage() {
           <p className="text-sm text-gray-500">
             We detected {foods.length} items. The more ingredients you have, the more meal options we can create!
           </p>
+          {inventorySaved && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+              <Check className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-800 font-medium">Saved to Inventory</span>
+            </div>
+          )}
           {foods.length < MIN_INGREDIENTS_REQUIRED && (
             <p className="text-sm text-red-600 font-semibold">
               Please add at least {MIN_INGREDIENTS_REQUIRED} ingredients to generate meals.

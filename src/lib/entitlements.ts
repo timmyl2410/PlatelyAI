@@ -15,6 +15,8 @@ export interface UserEntitlements {
   updatedAt: Date;
   currentPeriodEnd?: string; // ISO date string from Stripe
   subscriptionStatus?: string; // Stripe subscription status
+  stripeCustomerId?: string; // Stripe customer ID
+  stripeSubscriptionId?: string; // Stripe subscription ID
 }
 
 // Tier Configuration

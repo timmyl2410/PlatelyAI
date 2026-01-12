@@ -124,7 +124,9 @@ export function AccountPage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create billing portal session');
+        // Show user-friendly error message
+        const errorMsg = data.error || 'Failed to create billing portal session';
+        throw new Error(errorMsg);
       }
       
       // Redirect to Stripe billing portal
@@ -495,6 +497,13 @@ export function AccountPage() {
                     </div>
                   )}
 
+                  {/* Error Message */}
+                  {error && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-red-800">{error}</p>
+                    </div>
+                  )}
+
                   {/* Current Plan */}
                   <div className="mb-8">
                     <h3 className="text-lg mb-4" style={{ fontWeight: 600, color: '#2C2C2C' }}>
@@ -535,7 +544,7 @@ export function AccountPage() {
                           >
                             Upgrade to Premium
                           </button>
-                        ) : (
+                        ) : entitlements.stripeCustomerId ? (
                           <button 
                             onClick={handleManageSubscription}
                             disabled={billingLoading}
@@ -554,10 +563,14 @@ export function AccountPage() {
                               </>
                             )}
                           </button>
+                        ) : (
+                          <div className="flex-1 py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 text-center text-sm">
+                            Processing subscription... Please refresh in a moment.
+                          </div>
                         )}
                       </div>
                       
-                      {entitlements && entitlements.tier !== 'free' && (
+                      {entitlements && entitlements.tier !== 'free' && entitlements.stripeCustomerId && (
                         <p className="text-xs text-gray-500 mt-3 text-center">
                           Cancel or update payment method via Stripe
                         </p>
