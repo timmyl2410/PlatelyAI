@@ -139,7 +139,8 @@ export async function handler(event, context) {
       '\n- Generate exactly 5 meals.' +
       '\n- Only suggest real, well-known recipes that actually exist (e.g., "Chicken Stir-Fry", "Spaghetti Carbonara", "Greek Salad"). Do NOT invent creative fusion dishes or made-up meal names.' +
       '\n- Meals should mostly use the provided ingredients; you may add up to 3 common pantry staples per meal (salt, pepper, oil, water, etc.).' +
-      '\n- calories/protein/carbs/fat/healthScore should be plausible estimates (integers, in grams for macros).' +
+      '\n- calories/protein/carbs/fat should be plausible estimates (integers, in grams for macros).' +
+      '\n- healthScore must be an integer between 0-100 (where 100 is extremely healthy, 70-85 is moderately healthy, below 70 is less healthy).' +
       '\n- Keep prepTime like "25 min".' +
       '\n- No markdown, no extra keys.';
 

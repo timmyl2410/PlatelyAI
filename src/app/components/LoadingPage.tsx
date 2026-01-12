@@ -21,12 +21,20 @@ export function LoadingPage() {
   const [stage, setStage] = useState<'analyzing' | 'creating'>('analyzing');
   const [error, setError] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
     let cancelled = false;
+
+    // Wait for auth to load before starting
+    if (authLoading) {
+      console.log('LoadingPage: Waiting for auth to load...');
+      return;
+    }
+
+    console.log('LoadingPage: Auth loaded, user:', user ? user.uid : 'null');
 
     // Progress animation (caps at 95% until API returns)
     const progressInterval = setInterval(() => {
@@ -155,7 +163,7 @@ export function LoadingPage() {
       clearTimeout(stageTimeout);
       cancelled = true;
     };
-  }, [navigate, location.state, backendUrl, error]);
+  }, [navigate, location.state, backendUrl, error, authLoading, user]);
 
   return (
     <div className="min-h-screen bg-[#F9FAF7] flex items-center justify-center py-8 px-4">
