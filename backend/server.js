@@ -1038,7 +1038,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
               tier: 'premium',
               stripeCustomerId: session.customer,
               stripeSubscriptionId: session.subscription,
-              updatedAt: new Date().toISOString(),
+              updatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
             },
             { merge: true }
           );

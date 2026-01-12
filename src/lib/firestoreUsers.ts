@@ -16,16 +16,26 @@ export async function getUserEntitlements(uid: string): Promise<UserEntitlements
     }
 
     const data = userDoc.data();
+    
+    // Helper to convert various date formats
+    const toDate = (val: any): Date => {
+      if (!val) return new Date();
+      if (val.toDate) return val.toDate(); // Firestore Timestamp
+      if (typeof val === 'string') return new Date(val); // ISO string
+      if (val instanceof Date) return val;
+      return new Date();
+    };
+    
     return {
       uid,
       tier: data.tier || 'free',
       tierStatus: data.tierStatus || 'active',
       mealGenerationsUsed: data.mealGenerationsUsed || 0,
       mealGenerationsLimit: data.mealGenerationsLimit || 25,
-      billingPeriodStart: data.billingPeriodStart?.toDate() || new Date(),
-      nextResetAt: data.nextResetAt?.toDate() || new Date(),
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date(),
+      billingPeriodStart: toDate(data.billingPeriodStart),
+      nextResetAt: toDate(data.nextResetAt),
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
     };
   } catch (error) {
     console.error('Error fetching user entitlements:', error);
