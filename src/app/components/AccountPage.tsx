@@ -4,7 +4,7 @@ import { User, CreditCard, Bell, Shield, Camera, Mail, Lock, Trash2, Loader2, Ch
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useAuth } from '../../lib/useAuth';
-import { refetchUserEntitlements } from '../../lib/entitlements';
+import { getUserEntitlements } from '../../lib/firestoreUsers';
 
 type Tab = 'profile' | 'billing' | 'notifications' | 'security';
 
@@ -57,7 +57,7 @@ export function AccountPage() {
       const sessionId = searchParams.get('session_id');
       if (sessionId) {
         // Refetch entitlements to update tier status
-        refetchUserEntitlements(user.uid);
+        getUserEntitlements(user.uid);
         // Remove session_id from URL
         searchParams.delete('session_id');
         setSearchParams(searchParams, { replace: true });
