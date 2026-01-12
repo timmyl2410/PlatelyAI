@@ -35,10 +35,29 @@ export function HomePage() {
 
     checkInventory();
   }, [user, authLoading]);
+
   // TODO: Re-enable post-launch when we have real testimonials
   /* const testimonials = [
     {
-      name: 'SarInventory Banner (Priority over meals banner) */}
+      name: 'Sarah M.',
+      text: 'PlatelyAI helped me reduce food waste by 60%! I love how it turns random ingredients into delicious meals.',
+      rating: 5,
+    },
+    {
+      name: 'Mike T.',
+      text: 'As someone trying to bulk up, the health metadata is a game changer. Perfect macros every time!',
+      rating: 5,
+    },
+    {
+      name: 'Emily R.',
+      text: 'Super easy to use. Just snap a photo and get instant meal ideas. Saves me so much time meal planning.',
+      rating: 5,
+    },
+  ]; */
+
+  return (
+    <div className="min-h-screen bg-[#F9FAF7]">
+      {/* Saved Inventory Banner (Priority over meals banner) */}
       {hasInventory && (
         <div className="bg-gradient-to-r from-[#2ECC71] to-[#1E8449] py-3">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
