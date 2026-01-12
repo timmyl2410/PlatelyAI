@@ -84,9 +84,15 @@ export function LoadingPage() {
         // Get auth token if user is logged in
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (user) {
+          console.log('LoadingPage: User authenticated, getting token...');
           const token = await user.getIdToken();
+          console.log('LoadingPage: Token received, length:', token.length);
           headers['Authorization'] = `Bearer ${token}`;
+        } else {
+          console.log('LoadingPage: No user found, sending unauthenticated request');
         }
+
+        console.log('LoadingPage: Headers being sent:', Object.keys(headers));
 
         const resp = await fetch(`${backendUrl}/api/meals`, {
           method: 'POST',
