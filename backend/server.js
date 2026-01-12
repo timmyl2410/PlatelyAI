@@ -395,12 +395,13 @@ No explanations. No extra text. One-word response only.`;
 // ============================================================================
 app.post('/api/meals', async (req, res) => {
   try {
-    const { ingredients, goal, filters } = req.body;
+    const { ingredients, goal, filters, count } = req.body;
 
     console.log('🍽️  /api/meals called');
     console.log('   ingredients:', Array.isArray(ingredients) ? ingredients.length : 'not-an-array');
     console.log('   goal:', goal);
     console.log('   filters:', Array.isArray(filters) ? filters : 'none');
+    console.log('   count:', count);
 
     if (!Array.isArray(ingredients) || ingredients.length === 0) {
       return res.status(400).json({ error: 'Missing ingredients (array of strings)' });
@@ -507,6 +508,7 @@ app.post('/api/meals', async (req, res) => {
 
     const normalizedGoal = typeof goal === 'string' ? goal : 'maintain';
     const normalizedFilters = Array.isArray(filters) ? filters.filter((f) => typeof f === 'string') : [];
+    const mealsToGenerate = typeof count === 'number' && count >= 1 ? Math.min(count, 5) : 5;
 
     const systemPrompt =
       'You are a nutrition-aware meal planner. You generate realistic, well-known meals based on available ingredients. Only suggest real recipes that exist in cookbooks or are commonly made. You must return ONLY valid JSON.';
@@ -522,7 +524,7 @@ app.post('/api/meals', async (req, res) => {
       '{"id": string, "name": string, "description": string, "prepTime": string, "difficulty": "Easy"|"Medium"|"Hard", "healthScore": number, "calories": number, "protein": number, "carbs": number, "fat": number, "ingredients": string[]}' +
       ']}' +
       '\n\nRules:' +
-      '\n- Generate exactly 5 meals.' +
+      `\n- Generate exactly ${mealsToGenerate} meal${mealsToGenerate > 1 ? 's' : ''}.` +
       '\n- Only suggest real, well-known recipes that actually exist (e.g., "Chicken Stir-Fry", "Spaghetti Carbonara", "Greek Salad"). Do NOT invent creative fusion dishes or made-up meal names.' +
       '\n- Meals should mostly use the provided ingredients; you may add up to 3 common pantry staples per meal (salt, pepper, oil, water, etc.).' +
       '\n- calories/protein/carbs/fat should be plausible estimates (integers, in grams for macros).' +
@@ -563,7 +565,7 @@ app.post('/api/meals', async (req, res) => {
 
     const sanitized = meals
       .filter((m) => m && typeof m.name === 'string')
-      .slice(0, 5)
+      .slice(0, mealsToGenerate)
       .map((m, idx) => {
         const mealName = String(m.name).trim();
         // Generate a recipe search URL using AllRecipes (reliable recipe site)

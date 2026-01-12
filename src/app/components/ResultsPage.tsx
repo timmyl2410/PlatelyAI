@@ -682,6 +682,7 @@ export function ResultsPage() {
           ingredients: ingredientsToUse,
           goal,
           filters: filtersArray,
+          count: 1, // Only generate 1 meal for single regeneration
         }),
       });
 
