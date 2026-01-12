@@ -1036,6 +1036,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
           await docRef.set(
             {
               tier: 'premium',
+              mealGenerationsLimit: 150,
               stripeCustomerId: session.customer,
               stripeSubscriptionId: session.subscription,
               updatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
