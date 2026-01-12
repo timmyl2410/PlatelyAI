@@ -17,6 +17,12 @@ export async function handler(event, context) {
   }
 
   try {
+    // Check for required environment variables first
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('❌ STRIPE_SECRET_KEY not configured in Netlify');
+      return errorResponse('Billing portal not configured. Please contact support.', 500);
+    }
+
     const body = JSON.parse(event.body || '{}');
     const { userId } = body;
 

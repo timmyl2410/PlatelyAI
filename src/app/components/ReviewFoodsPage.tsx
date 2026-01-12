@@ -252,30 +252,31 @@ export function ReviewFoodsPage() {
     );
     setShowCategoryPicker(null);
   };
+  const handleSaveToInventory = async () => {
+    if (!user) {
+      alert('Please sign in to save your inventory');
+      return;
+    }
 
+    try {
+      const firstImageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : undefined;
+      const inventory = createInventoryFromScan(foods, firstImageUrl);
+      await saveCurrentInventory(user.uid, inventory);
+      setInventorySaved(true);
+      console.log('✅ Inventory saved successfully');
+    } catch (error) {
+      console.error('❌ Failed to save inventory:', error);
+      alert('Failed to save inventory. Please try again.');
+    }
+  };
   const handleGenerate = async () => {
     try {
       const ingredientNames = foods.map((f) => f.name).filter(Boolean);
       sessionStorage.setItem('plately:lastIngredients', JSON.stringify(ingredientNames));
 
-      // TODO: Save to inventory if user is authenticated
-      // This will store the current ingredient list so they don't need to rescan
+      // Save to inventory if user is authenticated
       if (user) {
-        try {
-          // Get the first uploaded image URL to store as "last scan" photo
-          const firstImageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : undefined;
-          
-          // Convert current foods to inventory format
-          const inventory = createInventoryFromScan(foods, firstImageUrl);
-          
-          // Save to Firestore
-          await saveCurrentInventory(user.uid, inventory);
-          setInventorySaved(true);
-          console.log('✅ Inventory saved successfully');
-        } catch (error) {
-          console.error('❌ Failed to save inventory (non-blocking):', error);
-          // Don't block meal generation if inventory save fails
-        }
+        await handleSaveToInventory();
       }
     } catch {
       // ignore
@@ -524,6 +525,17 @@ export function ReviewFoodsPage() {
           >
             Back to Upload
           </Link>
+          
+          {user && !inventorySaved && (
+            <button
+              onClick={handleSaveToInventory}
+              className="px-6 py-3 bg-white border-2 border-[#2ECC71] text-[#2ECC71] rounded-xl hover:bg-[#2ECC71] hover:text-white transition-all"
+              style={{ fontWeight: 600 }}
+            >
+              Save to Inventory
+            </button>
+          )}
+          
           <button
             onClick={handleGenerate}
             disabled={foods.length < MIN_INGREDIENTS_REQUIRED}
