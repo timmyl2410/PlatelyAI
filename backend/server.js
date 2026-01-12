@@ -1031,7 +1031,9 @@ app.post('/api/stripe-webhook', async (req, res) => {
           
           // Update user tier in Firestore
           const db = getFirestore();
-          await db.collection('userEntitlements').doc(userId).set(
+          const docRef = db.collection('userEntitlements').doc(userId);
+          
+          await docRef.set(
             {
               tier: 'premium',
               stripeCustomerId: session.customer,
@@ -1041,7 +1043,10 @@ app.post('/api/stripe-webhook', async (req, res) => {
             { merge: true }
           );
 
+          // Verify the write
+          const verifyDoc = await docRef.get();
           console.log(`✓ User ${userId} upgraded to premium in Firestore`);
+          console.log(`   Verified tier in Firestore: ${verifyDoc.data()?.tier}`);
         } else {
           console.error('❌ No userId in session metadata');
         }
