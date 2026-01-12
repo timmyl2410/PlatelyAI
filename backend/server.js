@@ -1016,10 +1016,15 @@ app.post('/api/stripe-webhook', async (req, res) => {
 
   // Handle the event
   try {
+    console.log(`📦 Webhook event received: ${event.type}`);
+    
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const userId = session.metadata?.userId;
+
+        console.log(`   Session metadata:`, session.metadata);
+        console.log(`   User ID from metadata: ${userId}`);
 
         if (userId) {
           console.log(`✓ Payment successful for user ${userId}`);
@@ -1036,7 +1041,9 @@ app.post('/api/stripe-webhook', async (req, res) => {
             { merge: true }
           );
 
-          console.log(`✓ User ${userId} upgraded to premium`);
+          console.log(`✓ User ${userId} upgraded to premium in Firestore`);
+        } else {
+          console.error('❌ No userId in session metadata');
         }
         break;
       }
