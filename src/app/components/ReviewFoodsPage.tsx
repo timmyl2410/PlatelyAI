@@ -330,6 +330,24 @@ export function ReviewFoodsPage() {
   return (
     <div className="min-h-screen bg-[#F9FAF7] py-8 md:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Banner for Inventory Source */}
+        {fromInventory && (
+          <div className="mb-6 bg-gradient-to-r from-[#2ECC71] to-[#1E8449] rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-lg">Ingredients Loaded from Your Inventory</p>
+                <p className="text-sm opacity-90">Review ingredients, set your goals, and generate meals</p>
+              </div>
+              <Link
+                to="/inventory"
+                className="px-4 py-2 bg-white text-[#2ECC71] rounded-lg hover:shadow-lg transition-all font-semibold text-sm"
+              >
+                Edit Inventory
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Stepper */}
         <div className="mb-12">
           <div className="flex items-center justify-center gap-2 md:gap-4">
