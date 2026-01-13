@@ -208,24 +208,26 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
                   {groupedItems[category].map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#2ECC71] transition-all group"
+                      className="relative flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#2ECC71] transition-all group"
                     >
                       <input
                         type="text"
                         value={item.name}
                         onChange={(e) => handleUpdateItemName(item.id, e.target.value)}
-                        className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#2ECC71] rounded text-sm font-medium"
+                        className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#2ECC71] rounded text-sm font-medium min-w-0"
                       />
-                      <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">
-                        {item.addedBy === 'ai' ? 'AI' : 'User'}
-                      </span>
-                      <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">
+                          {item.addedBy === 'ai' ? 'AI' : 'User'}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
