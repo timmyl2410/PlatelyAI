@@ -196,30 +196,39 @@ export function HomePage() {
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          position: 'relative'
+                          position: 'relative',
+                          zIndex: 1
                         }}
                       >
-                        <Sparkles style={{ color: '#ffffff', marginBottom: '8px' }} size={20} />
-                        <p style={{ 
+                        <Sparkles style={{ color: '#ffffff', marginBottom: '8px', position: 'relative', zIndex: 2 }} size={20} />
+                        <div style={{ 
                           fontSize: '0.75rem',
                           fontWeight: 600,
                           textAlign: 'center',
                           lineHeight: '1.2',
                           marginBottom: '8px',
-                          color: '#ffffff'
+                          color: '#ffffff',
+                          position: 'relative',
+                          zIndex: 2,
+                          WebkitTextFillColor: '#ffffff',
+                          opacity: 1
                         }}>
                           {meal.name}
-                        </p>
-                        <span style={{ 
+                        </div>
+                        <div style={{ 
                           fontSize: '0.75rem',
                           backgroundColor: 'rgba(255, 255, 255, 0.2)',
                           padding: '4px 8px',
                           borderRadius: '9999px',
                           fontWeight: 500,
-                          color: '#ffffff'
+                          color: '#ffffff',
+                          position: 'relative',
+                          zIndex: 2,
+                          WebkitTextFillColor: '#ffffff',
+                          opacity: 1
                         }}>
                           {meal.protein} protein
-                        </span>
+                        </div>
                       </div>
                     ))}
                   </div>
