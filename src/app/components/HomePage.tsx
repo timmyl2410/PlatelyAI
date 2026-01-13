@@ -188,14 +188,36 @@ export function HomePage() {
                     ].map((meal, i) => (
                       <div
                         key={i}
-                        className="bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-4 flex flex-col items-center justify-center"
-                        style={{ isolation: 'isolate' }}
+                        style={{ 
+                          background: 'linear-gradient(135deg, #2ECC71 0%, #1E8449 100%)',
+                          borderRadius: '12px',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}
                       >
-                        <Sparkles className="mb-2" style={{ color: 'white' }} size={20} />
-                        <p className="text-xs font-semibold text-center leading-tight mb-2" style={{ color: 'white' }}>
+                        <Sparkles style={{ color: '#ffffff', marginBottom: '8px' }} size={20} />
+                        <p style={{ 
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          textAlign: 'center',
+                          lineHeight: '1.2',
+                          marginBottom: '8px',
+                          color: '#ffffff'
+                        }}>
                           {meal.name}
                         </p>
-                        <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full font-medium" style={{ color: 'white' }}>
+                        <span style={{ 
+                          fontSize: '0.75rem',
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          padding: '4px 8px',
+                          borderRadius: '9999px',
+                          fontWeight: 500,
+                          color: '#ffffff'
+                        }}>
                           {meal.protein} protein
                         </span>
                       </div>
