@@ -199,27 +199,29 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
           <div className="space-y-6">
             {CATEGORY_ORDER.filter(category => groupedItems[category]?.length > 0).map(category => (
               <div key={category}>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#2ECC71]"></span>
                   {category}
+                  <span className="text-xs font-normal text-gray-500 ml-1">({groupedItems[category].length})</span>
                 </h4>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {groupedItems[category].map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#2ECC71] transition-all group"
                     >
                       <input
                         type="text"
                         value={item.name}
                         onChange={(e) => handleUpdateItemName(item.id, e.target.value)}
-                        className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#2ECC71] rounded"
+                        className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#2ECC71] rounded text-sm font-medium"
                       />
-                      <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
-                        {item.addedBy === 'ai' ? 'AI' : 'Manual'}
+                      <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">
+                        {item.addedBy === 'ai' ? 'AI' : 'User'}
                       </span>
                       <button
                         onClick={() => handleRemoveItem(item.id)}
-                        className="text-red-500 hover:text-red-700 p-1"
+                        className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Remove item"
                       >
                         <Trash2 className="w-4 h-4" />
