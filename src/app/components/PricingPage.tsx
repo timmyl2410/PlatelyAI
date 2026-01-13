@@ -134,8 +134,8 @@ export function PricingPage() {
           className="text-4xl md:text-5xl lg:text-6xl mb-4"
           style={{ fontWeight: 700, color: '#2C2C2C' }}
         >
-          Simple, transparent{' '}
-          <span style={{ color: '#2ECC71' }}>pricing</span>
+          Simple, Transparent{' '}
+          <span style={{ color: '#2ECC71' }}>Pricing</span>
         </h1>
         <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
           Start free, upgrade when you need more. All plans include smart ingredient scanning.

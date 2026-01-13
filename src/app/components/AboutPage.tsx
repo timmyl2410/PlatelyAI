@@ -57,8 +57,8 @@ export function AboutPage() {
               className="text-4xl md:text-5xl lg:text-6xl mb-6"
               style={{ fontWeight: 700, color: '#2C2C2C' }}
             >
-              Helping athletes and fitness-focused people{' '}
-              <span style={{ color: '#2ECC71' }}>eat smarter</span> with AI
+              Helping Athletes and Fitness-Focused People{' '}
+              <span style={{ color: '#2ECC71' }}>Eat Smarter</span> With AI
             </h1>
             <p className="text-lg md:text-xl text-gray-600 leading-relaxed mb-8">
               PlatelyAI helps you turn the ingredients in your fridge into high-protein, goal-aligned meals—without wasting food or time figuring out what to cook.

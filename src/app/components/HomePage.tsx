@@ -107,8 +107,8 @@ export function HomePage() {
               className="text-4xl md:text-5xl lg:text-6xl leading-tight"
               style={{ fontWeight: 700, color: '#2C2C2C' }}
             >
-              Turn what you have into{' '}
-              <span style={{ color: '#2ECC71' }}>high-protein meals.</span>
+              Turn What You Have Into{' '}
+              <span style={{ color: '#2ECC71' }}>High-Protein Meals.</span>
             </h1>
             <p className="text-lg md:text-xl text-[#6b6b6b] leading-relaxed">
               Scan your fridge and get AI-powered meal ideas built for athletes and fitness-focused people. Complete nutrition info included—no guesswork, no wasted food.
@@ -160,6 +160,9 @@ export function HomePage() {
                     </p>
                     <Sparkles className="text-[#2ECC71]" size={24} />
                   </div>
+                  <p className="text-xs text-gray-500 text-center mb-3">
+                    Optimized for protein & macros
+                  </p>
                   <div className="flex justify-center gap-1">
                     <div className="w-2 h-2 bg-[#2ECC71] rounded-full animate-pulse"></div>
                     <div className="w-2 h-2 bg-[#2ECC71] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
@@ -185,13 +188,13 @@ export function HomePage() {
                     ].map((meal, i) => (
                       <div
                         key={i}
-                        className="bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-3 flex flex-col items-center justify-center text-white"
+                        className="relative bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-3 flex flex-col items-center justify-center"
                       >
-                        <Sparkles className="mb-2" size={20} />
-                        <p className="text-xs font-semibold text-center leading-tight mb-2">
+                        <Sparkles className="mb-2 text-white relative z-10" size={20} />
+                        <p className="text-xs font-semibold text-center leading-tight mb-2 text-white relative z-10">
                           {meal.name}
                         </p>
-                        <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full font-medium">
+                        <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full font-medium text-white relative z-10">
                           {meal.protein} protein
                         </span>
                       </div>
