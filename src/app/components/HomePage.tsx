@@ -188,13 +188,14 @@ export function HomePage() {
                     ].map((meal, i) => (
                       <div
                         key={i}
-                        className="relative bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-3 flex flex-col items-center justify-center"
+                        className="bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-4 flex flex-col items-center justify-center"
+                        style={{ isolation: 'isolate' }}
                       >
-                        <Sparkles className="mb-2 text-white relative z-10" size={20} />
-                        <p className="text-xs font-semibold text-center leading-tight mb-2 text-white relative z-10">
+                        <Sparkles className="mb-2" style={{ color: 'white' }} size={20} />
+                        <p className="text-xs font-semibold text-center leading-tight mb-2" style={{ color: 'white' }}>
                           {meal.name}
                         </p>
-                        <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full font-medium text-white relative z-10">
+                        <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full font-medium" style={{ color: 'white' }}>
                           {meal.protein} protein
                         </span>
                       </div>
