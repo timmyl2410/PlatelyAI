@@ -40,6 +40,8 @@ export function ReviewFoodsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const imageUrlsFromState = (location.state as any)?.imageUrls as string[] | undefined;
+  const detectedIngredientsFromState = (location.state as any)?.detectedIngredients as string[] | undefined;
+  const fromInventory = (location.state as any)?.fromInventory as boolean | undefined;
 
   const queryParams = new URLSearchParams(location.search);
   const fridgeSessionIdFromQuery = queryParams.get('fridgeSessionId') || undefined;
@@ -81,6 +83,40 @@ export function ReviewFoodsPage() {
         setLoading(true);
         setLoadError(null);
         setScanProgress(10);
+
+        // If coming from inventory, load those ingredients directly
+        if (fromInventory && detectedIngredientsFromState && detectedIngredientsFromState.length > 0) {
+          setScanProgress(50);
+          
+          // Convert ingredient names to FoodItem format with categorization
+          const categorizedFoods: FoodItem[] = [];
+          const totalIngredients = detectedIngredientsFromState.length;
+          
+          for (let i = 0; i < detectedIngredientsFromState.length; i++) {
+            const ingredientName = detectedIngredientsFromState[i].trim();
+            const result = await categorizeFood(ingredientName, backendUrl);
+            
+            categorizedFoods.push({
+              id: `inv_${Date.now()}_${i}_${Math.random().toString(16).slice(2)}`,
+              name: ingredientName,
+              category: result.category,
+              needsConfirmation: false,
+              source: 'user',
+              confidence: 'high',
+            });
+            
+            // Progress from 50% to 100%
+            const progress = 50 + Math.floor((i + 1) / totalIngredients * 50);
+            setScanProgress(progress);
+          }
+          
+          if (!cancelled) {
+            setScanProgress(100);
+            setFoods(categorizedFoods);
+            setLoading(false);
+          }
+          return;
+        }
 
         // 1) Prefer explicit imageUrls (passed from Upload)
         // 2) Otherwise, try recovering image URLs from Firestore session IDs
@@ -178,7 +214,7 @@ export function ReviewFoodsPage() {
     return () => {
       cancelled = true;
     };
-  }, [imageUrls]);
+  }, [imageUrls, fromInventory, detectedIngredientsFromState]);
 
   const removeFood = (id: string) => {
     setFoods(foods.filter((food) => food.id !== id));
