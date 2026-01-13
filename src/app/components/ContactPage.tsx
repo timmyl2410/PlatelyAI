@@ -2,40 +2,17 @@ import { Mail, MessageSquare, Send } from 'lucide-react';
 import { useState } from 'react';
 
 export function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-  });
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus('sending');
-
-    // Create mailto link with form data
-    const mailtoLink = `mailto:timmyl2410@gmail.com?subject=${encodeURIComponent(
-      formData.subject
-    )}&body=${encodeURIComponent(
-      `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
-    )}`;
-
-    // Open mailto link
-    window.location.href = mailtoLink;
-
-    // Show success message
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Netlify handles the form submission automatically
+    // We just show a success message
+    setStatus('success');
+    
+    // Reset form after 3 seconds
     setTimeout(() => {
-      setStatus('success');
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 500);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+      setStatus('idle');
+    }, 5000);
   };
 
   return (
@@ -128,7 +105,16 @@ export function ContactPage() {
               Send us a Message
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form 
+              name="contact" 
+              method="POST" 
+              data-netlify="true"
+              onSubmit={handleSubmit}
+              className="space-y-6"
+            >
+              {/* Hidden field for Netlify */}
+              <input type="hidden" name="form-name" value="contact" />
+              
               {/* Name */}
               <div>
                 <label htmlFor="name" className="block text-sm mb-2" style={{ fontWeight: 600, color: '#2C2C2C' }}>
@@ -138,8 +124,6 @@ export function ContactPage() {
                   type="text"
                   id="name"
                   name="name"
-                  value={formData.name}
-                  onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent transition-all"
                   placeholder="John Doe"
@@ -155,8 +139,6 @@ export function ContactPage() {
                   type="email"
                   id="email"
                   name="email"
-                  value={formData.email}
-                  onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent transition-all"
                   placeholder="john@example.com"
@@ -172,8 +154,6 @@ export function ContactPage() {
                   type="text"
                   id="subject"
                   name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent transition-all"
                   placeholder="How can we help?"
@@ -188,8 +168,6 @@ export function ContactPage() {
                 <textarea
                   id="message"
                   name="message"
-                  value={formData.message}
-                  onChange={handleChange}
                   required
                   rows={6}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2ECC71] focus:border-transparent transition-all resize-none"
@@ -200,24 +178,19 @@ export function ContactPage() {
               {/* Success Message */}
               {status === 'success' && (
                 <div className="bg-[#2ECC71] bg-opacity-10 border border-[#2ECC71] text-[#1E8449] px-4 py-3 rounded-lg">
-                  ✓ Your default email client should open. Thanks for reaching out!
+                  ✓ Message sent successfully! We will respond within 24-48 hours.
                 </div>
               )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={status === 'sending'}
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all shadow-lg hover:shadow-xl"
                 style={{ fontWeight: 600 }}
               >
                 <Send size={20} />
-                {status === 'sending' ? 'Opening Email Client...' : 'Send Message'}
+                Send Message
               </button>
-
-              <p className="text-sm text-gray-500 text-center">
-                This will open your default email client with the message pre-filled.
-              </p>
             </form>
           </div>
         </div>

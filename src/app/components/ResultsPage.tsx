@@ -572,9 +572,20 @@ export function ResultsPage() {
         throw new Error('No ingredients found. Go back and scan a photo first.');
       }
 
+      // Get auth token if user is logged in
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          headers['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+          console.warn('Failed to get auth token:', err);
+        }
+      }
+
       const resp = await fetch(`${backendUrl}/api/meals`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ingredients,
           goal,
