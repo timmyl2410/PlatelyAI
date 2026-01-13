@@ -329,8 +329,15 @@ export function InventoryPage() {
   const handleGenerateMeals = () => {
     if (!inventory || inventory.items.length === 0) return;
 
-    // Navigate to upload page with inventory source
-    navigate('/upload?source=inventory');
+    // Navigate directly to review page with inventory ingredients
+    const ingredientNames = inventory.items.map(item => item.name).filter(Boolean);
+    
+    navigate('/review', {
+      state: {
+        fromInventory: true,
+        detectedIngredients: ingredientNames,
+      },
+    });
   };
 
   const handleStartScanning = () => {
