@@ -138,7 +138,18 @@ export function HomePage() {
                     {['Chicken', 'Eggs', 'Rice', 'Greek Yogurt', 'Spinach', 'Avocado'].map((ingredient) => (
                       <span
                         key={ingredient}
-                        className="px-4 py-2 bg-[#2ECC71] bg-opacity-10 text-[#2ECC71] rounded-full text-sm font-medium"
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                          color: '#2ECC71',
+                          borderRadius: '9999px',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          WebkitTextFillColor: '#2ECC71',
+                          opacity: 1,
+                          position: 'relative',
+                          zIndex: 1
+                        }}
                       >
                         {ingredient}
                       </span>
