@@ -218,12 +218,12 @@ export function AboutPage() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <a
-              href="mailto:hello@mealmaker.ai"
+              href="mailto:timmyl2410@gmail.com"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#2ECC71] rounded-xl hover:shadow-xl transition-all"
               style={{ fontWeight: 600 }}
             >
               <Mail size={20} />
-              hello@mealmaker.ai
+              timmyl2410@gmail.com
             </a>
           </div>
 

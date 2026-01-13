@@ -50,7 +50,7 @@ export async function handler(event, context) {
       if (userDoc.exists) {
         const userData = userDoc.data();
         const tier = userData.tier || 'free';
-        let { generationsUsed = 0, nextResetAt } = userData;
+        let { mealGenerationsUsed = 0, mealGenerationsLimit, nextResetAt } = userData;
         
         // Check if monthly reset is needed
         const now = new Date();
@@ -58,26 +58,26 @@ export async function handler(event, context) {
         
         if (now >= resetDate) {
           console.log('   resetting monthly usage for user:', userId);
-          generationsUsed = 0;
+          mealGenerationsUsed = 0;
           // Set next reset to 1st of next month
           const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           await userRef.update({
-            generationsUsed: 0,
+            mealGenerationsUsed: 0,
             lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
             nextResetAt: admin.firestore.Timestamp.fromDate(nextReset),
           });
         }
         
-        // Check usage limits based on tier
+        // Use mealGenerationsLimit from user doc, or fallback to tier defaults
         const tierLimits = {
           free: 25,
           premium: 150,
           pro: 500,
         };
-        const limit = tierLimits[tier] || 25;
+        const limit = mealGenerationsLimit || tierLimits[tier] || 25;
         
-        if (generationsUsed >= limit) {
-          console.warn('   ⚠️  LIMIT REACHED for user:', userId, `(${generationsUsed}/${limit})`);
+        if (mealGenerationsUsed >= limit) {
+          console.warn('   ⚠️  LIMIT REACHED for user:', userId, `(${mealGenerationsUsed}/${limit})`);
           return {
             statusCode: 403,
             headers: corsHeaders,
@@ -85,14 +85,14 @@ export async function handler(event, context) {
               error: 'LIMIT_REACHED',
               message: `You've reached your monthly limit of ${limit} meal generations.`,
               tier,
-              used: generationsUsed,
+              used: mealGenerationsUsed,
               limit,
               nextResetAt: resetDate.toISOString(),
             }),
           };
         }
         
-        console.log('   usage check passed:', `${generationsUsed + 1}/${limit}`);
+        console.log('   usage check passed:', `${mealGenerationsUsed + 1}/${limit}`);
       } else {
         // User authenticated but no entitlements doc - create one
         console.log('   creating entitlements for new user:', userId);
@@ -100,8 +100,9 @@ export async function handler(event, context) {
         const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         await userRef.set({
           tier: 'free',
-          status: 'active',
-          generationsUsed: 0,
+          tierStatus: 'active',
+          mealGenerationsUsed: 0,
+          mealGenerationsLimit: 25,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           lastResetAt: admin.firestore.FieldValue.serverTimestamp(),
           nextResetAt: admin.firestore.Timestamp.fromDate(nextReset),
@@ -207,7 +208,7 @@ export async function handler(event, context) {
       const db = getFirestore();
       const userRef = db.collection('users').doc(userId);
       await userRef.update({
-        generationsUsed: admin.firestore.FieldValue.increment(1),
+        mealGenerationsUsed: admin.firestore.FieldValue.increment(1),
       });
       console.log('   incremented usage counter for user:', userId);
     }

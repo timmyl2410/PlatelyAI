@@ -315,7 +315,7 @@ export function TermsOfServicePage() {
                 If you have any questions about these Terms of Service, please contact us:
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-gray-700"><strong>Email:</strong> <a href="mailto:hello@plately.ai" className="text-[#2ECC71] hover:underline">hello@plately.ai</a></p>
+                <p className="text-gray-700"><strong>Email:</strong> <a href="mailto:timmyl2410@gmail.com" className="text-[#2ECC71] hover:underline">timmyl2410@gmail.com</a></p>
                 <p className="text-gray-700 mt-2"><strong>PlatelyAI</strong><br />United States</p>
               </div>
             </section>

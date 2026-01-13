@@ -185,7 +185,7 @@ export function PrivacyPolicyPage() {
                 <li><strong>Withdraw consent:</strong> Where we rely on your consent, you may withdraw it at any time</li>
               </ul>
               <p className="text-gray-700 leading-relaxed">
-                To exercise these rights, contact us at <a href="mailto:hello@plately.ai" className="text-[#2ECC71] hover:underline">hello@plately.ai</a>.
+                To exercise these rights, contact us at <a href="mailto:timmyl2410@gmail.com" className="text-[#2ECC71] hover:underline">timmyl2410@gmail.com</a>.
               </p>
             </section>
 
@@ -237,7 +237,7 @@ export function PrivacyPolicyPage() {
                 If you have any questions about this Privacy Policy or our data practices, please contact us:
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-gray-700"><strong>Email:</strong> <a href="mailto:hello@plately.ai" className="text-[#2ECC71] hover:underline">hello@plately.ai</a></p>
+                <p className="text-gray-700"><strong>Email:</strong> <a href="mailto:timmyl2410@gmail.com" className="text-[#2ECC71] hover:underline">timmyl2410@gmail.com</a></p>
                 <p className="text-gray-700 mt-2"><strong>PlatelyAI</strong><br />United States</p>
               </div>
             </section>

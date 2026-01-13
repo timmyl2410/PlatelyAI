@@ -57,7 +57,7 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#F9FAF7]">
-      {/* Saved Inventory Banner (Priority over meals banner) */}
+      {/* Saved Inventory Banner */}
       {hasInventory && (
         <div className="bg-gradient-to-r from-[#2ECC71] to-[#1E8449] py-3">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,7 +79,7 @@ export function HomePage() {
       )}
 
       {/* Saved Meals Banner */}
-      {!hasInventory && hasSavedMeals && (
+      {hasSavedMeals && (
         <div className="bg-gradient-to-r from-[#2ECC71] to-[#1E8449] py-3">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
@@ -113,22 +113,14 @@ export function HomePage() {
             <p className="text-lg md:text-xl text-[#6b6b6b] leading-relaxed">
               Scan your fridge and get AI-powered meal ideas built for athletes and fitness-focused people. Complete nutrition info included—no guesswork, no wasted food.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex justify-start">
               <Link
                 to="/upload"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all shadow-lg hover:shadow-xl"
-                style={{ fontWeight: 600 }}
+                className="inline-flex items-center justify-center gap-3 px-10 py-5 bg-[#2ECC71] text-white rounded-2xl hover:bg-[#1E8449] transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform"
+                style={{ fontWeight: 700, fontSize: '1.125rem' }}
               >
-                <Camera size={20} />
-                Scan Your Fridge
-              </Link>
-              <Link
-                to="/upload"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#2C2C2C] rounded-xl hover:bg-gray-50 transition-all shadow-md hover:shadow-lg border border-border"
-                style={{ fontWeight: 500 }}
-              >
-                <Upload size={20} />
-                Upload Photos
+                <Camera size={24} />
+                Get Started - Scan Your Fridge
               </Link>
             </div>
           </div>
@@ -254,14 +246,14 @@ export function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#2ECC71] transition-colors">
-                    Blog
-                  </a>
+                  <Link to="/faq" className="hover:text-[#2ECC71] transition-colors">
+                    FAQ
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#2ECC71] transition-colors">
+                  <Link to="/contact" className="hover:text-[#2ECC71] transition-colors">
                     Contact
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

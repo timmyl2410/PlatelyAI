@@ -9,6 +9,8 @@ import { ResultsPage } from './components/ResultsPage';
 import { PricingPage } from './components/PricingPage';
 import { HowItWorksPage } from './components/HowItWorksPage';
 import { AboutPage } from './components/AboutPage';
+import { ContactPage } from './components/ContactPage';
+import { FAQPage } from './components/FAQPage';
 import { SignInPage } from './components/SignInPage';
 import { SignUpPage } from './components/SignUpPage';
 import { ForgotPasswordPage } from './components/ForgotPasswordPage';
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/signin" element={<SignInPage />} />
