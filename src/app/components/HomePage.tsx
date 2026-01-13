@@ -129,37 +129,74 @@ export function HomePage() {
           <div className="relative">
             <div className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
               <div className="space-y-6">
-                {/* Fridge Icon */}
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-[#2ECC71] bg-opacity-10 rounded-2xl flex items-center justify-center">
-                    <div className="w-10 h-12 bg-[#2ECC71] rounded-lg"></div>
+                {/* Section 1: Fridge & Pantry */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center">
+                    Fridge & Pantry
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {['Chicken', 'Eggs', 'Rice', 'Greek Yogurt', 'Spinach', 'Avocado'].map((ingredient) => (
+                      <span
+                        key={ingredient}
+                        className="px-4 py-2 bg-[#2ECC71] bg-opacity-10 text-[#2ECC71] rounded-full text-sm font-medium"
+                      >
+                        {ingredient}
+                      </span>
+                    ))}
                   </div>
-                  <div className="flex-1 h-3 bg-gray-200 rounded-full"></div>
                 </div>
 
-                {/* Plus */}
-                <div className="text-center text-2xl text-[#2ECC71]" style={{ fontWeight: 700 }}>
-                  +
+                {/* Arrow Down */}
+                <div className="text-center">
+                  <div className="inline-block text-3xl text-[#2ECC71]">↓</div>
                 </div>
 
-                {/* Pantry Icon */}
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-[#F4D03F] bg-opacity-20 rounded-2xl flex items-center justify-center">
-                    <div className="w-10 h-12 bg-[#F4D03F] rounded-lg"></div>
+                {/* Section 2: AI Combines Ingredients */}
+                <div className="py-4">
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <Sparkles className="text-[#2ECC71]" size={24} />
+                    <p className="text-sm font-semibold text-gray-700">
+                      AI Combines Ingredients
+                    </p>
+                    <Sparkles className="text-[#2ECC71]" size={24} />
                   </div>
-                  <div className="flex-1 h-3 bg-gray-200 rounded-full"></div>
+                  <div className="flex justify-center gap-1">
+                    <div className="w-2 h-2 bg-[#2ECC71] rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-[#2ECC71] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-[#2ECC71] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
                 </div>
 
-                {/* Arrow */}
-                <div className="text-center text-3xl text-[#2C2C2C]">↓</div>
+                {/* Arrow Down */}
+                <div className="text-center">
+                  <div className="inline-block text-3xl text-[#2ECC71]">↓</div>
+                </div>
 
-                {/* Meal Cards */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-4 aspect-square flex items-center justify-center">
-                      <Sparkles className="text-white" size={24} />
-                    </div>
-                  ))}
+                {/* Section 3: High-Protein Meal Ideas */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center">
+                    High-Protein Meal Ideas
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { name: 'Chicken Power Bowl', protein: '42g' },
+                      { name: 'Protein Egg Wrap', protein: '38g' },
+                      { name: 'Greek Yogurt Parfait', protein: '28g' }
+                    ].map((meal, i) => (
+                      <div
+                        key={i}
+                        className="bg-gradient-to-br from-[#2ECC71] to-[#1E8449] rounded-xl p-3 flex flex-col items-center justify-center text-white"
+                      >
+                        <Sparkles className="mb-2" size={20} />
+                        <p className="text-xs font-semibold text-center leading-tight mb-2">
+                          {meal.name}
+                        </p>
+                        <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full font-medium">
+                          {meal.protein} protein
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
