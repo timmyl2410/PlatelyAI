@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QrCode, Upload, Check, Loader2, Camera, X, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { createSession, getSession, subscribeToSession, uploadImage } from '../../lib/firebase';
@@ -18,6 +18,9 @@ type SessionData = {
 export function UploadPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const fromInventory = searchParams.get('source') === 'inventory';
+  
   const [fridgeStatus, setFridgeStatus] = useState<UploadStatus>('idle');
   const [pantryStatus, setPantryStatus] = useState<UploadStatus>('idle');
   const [showQR, setShowQR] = useState<'fridge' | 'pantry' | null>(null);
@@ -28,6 +31,32 @@ export function UploadPage() {
   const [fridgeUploadedImages, setFridgeUploadedImages] = useState<Array<{ url: string; uploadedAt: any }>>([]);
   const [pantryUploadedImages, setPantryUploadedImages] = useState<Array<{ url: string; uploadedAt: any }>>([]);
   const [isPolling, setIsPolling] = useState(false);
+  const [inventoryLoaded, setInventoryLoaded] = useState(false);
+
+  // =========================================================================
+  // LOAD INVENTORY: If coming from inventory page, pre-load ingredients
+  // =========================================================================
+  useEffect(() => {
+    if (fromInventory && user && !inventoryLoaded) {
+      const loadInventoryIngredients = async () => {
+        try {
+          const { getCurrentInventory } = await import('../../lib/inventory');
+          const inventory = await getCurrentInventory(user.uid);
+          
+          if (inventory && inventory.items.length > 0) {
+            // Mark as complete so user can proceed to review
+            setFridgeStatus('complete');
+            setPantryStatus('complete');
+            setInventoryLoaded(true);
+          }
+        } catch (error) {
+          console.error('Failed to load inventory:', error);
+        }
+      };
+      
+      loadInventoryIngredients();
+    }
+  }, [fromInventory, user, inventoryLoaded]);
 
   // =========================================================================
   // AUTH CHECK: Redirect to sign-in if not authenticated
@@ -232,23 +261,41 @@ export function UploadPage() {
   return (
     <div className="min-h-screen bg-[#F9FAF7] py-8 md:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Banner for Inventory Source */}
+        {fromInventory && (
+          <div className="mb-6 bg-gradient-to-r from-[#2ECC71] to-[#1E8449] rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-lg">Using Your Saved Inventory</p>
+                <p className="text-sm opacity-90">Customize your meal preferences below and generate meals</p>
+              </div>
+              <Link
+                to="/inventory"
+                className="px-4 py-2 bg-white text-[#2ECC71] rounded-lg hover:shadow-lg transition-all font-semibold text-sm"
+              >
+                Edit Inventory
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Stepper */}
         <div className="mb-12">
           <div className="flex items-center justify-center gap-2 md:gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#2ECC71] text-white flex items-center justify-center" style={{ fontWeight: 600 }}>
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${fromInventory ? 'bg-gray-300 text-gray-600' : 'bg-[#2ECC71] text-white'}`} style={{ fontWeight: 600 }}>
                 1
               </div>
-              <span className="text-[#2ECC71] hidden sm:inline" style={{ fontWeight: 600 }}>
+              <span className={`hidden sm:inline ${fromInventory ? 'text-gray-600' : 'text-[#2ECC71]'}`} style={{ fontWeight: fromInventory ? 500 : 600 }}>
                 Upload
               </span>
             </div>
             <div className="w-8 md:w-16 h-0.5 bg-gray-300"></div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center" style={{ fontWeight: 600 }}>
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${fromInventory ? 'bg-[#2ECC71] text-white' : 'bg-gray-300 text-gray-600'}`} style={{ fontWeight: 600 }}>
                 2
               </div>
-              <span className="text-gray-600 hidden sm:inline" style={{ fontWeight: 500 }}>
+              <span className={`hidden sm:inline ${fromInventory ? 'text-[#2ECC71]' : 'text-gray-600'}`} style={{ fontWeight: fromInventory ? 600 : 500 }}>
                 Review Foods
               </span>
             </div>
@@ -264,7 +311,8 @@ export function UploadPage() {
           </div>
         </div>
 
-        {/* Upload Cards */}
+        {/* Upload Cards - Hide if from inventory */}
+        {!fromInventory && (
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Fridge Card */}
           <div className="bg-white rounded-2xl p-6 md:p-8 shadow-lg">
@@ -601,19 +649,20 @@ export function UploadPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/"
+            to={fromInventory ? "/inventory" : "/"}
             className="px-8 py-3 text-[#2C2C2C] hover:text-[#2ECC71] transition-colors text-center"
             style={{ fontWeight: 500 }}
           >
-            Back to Home
+            {fromInventory ? "Back to Inventory" : "Back to Home"}
           </Link>
           <button
             onClick={handleContinue}
-            disabled={fridgeStatus !== 'complete'}
+            disabled={fromInventory ? !inventoryLoaded : fridgeStatus !== 'complete'}
             className="px-8 py-3 bg-[#2ECC71] text-white rounded-xl hover:bg-[#1E8449] transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
             style={{ fontWeight: 600 }}
           >
@@ -622,7 +671,7 @@ export function UploadPage() {
         </div>
 
         {/* Help Text */}
-        {fridgeStatus === 'idle' && (
+        {!fromInventory && fridgeStatus === 'idle' && (
           <p className="text-center text-sm text-gray-500 mt-8">
             Tip: For best results, ensure good lighting and clear visibility of items
           </p>

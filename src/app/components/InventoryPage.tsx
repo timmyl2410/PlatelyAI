@@ -329,23 +329,8 @@ export function InventoryPage() {
   const handleGenerateMeals = () => {
     if (!inventory || inventory.items.length === 0) return;
 
-    // Navigate to loading page with inventory ingredients
-    const ingredientNames = inventory.items.map(item => item.name).filter(Boolean);
-    
-    // Store in sessionStorage for fallback
-    try {
-      sessionStorage.setItem('plately:lastIngredients', JSON.stringify(ingredientNames));
-    } catch {
-      // ignore
-    }
-
-    navigate('/loading', {
-      state: {
-        ingredients: ingredientNames,
-        goal: 'maintain', // Default goal, user can change in future
-        filters: [],
-      },
-    });
+    // Navigate to upload page with inventory source
+    navigate('/upload?source=inventory');
   };
 
   const handleStartScanning = () => {
