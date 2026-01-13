@@ -107,11 +107,11 @@ export function HomePage() {
               className="text-4xl md:text-5xl lg:text-6xl leading-tight"
               style={{ fontWeight: 700, color: '#2C2C2C' }}
             >
-              Turn What You Have Into{' '}
-              <span style={{ color: '#2ECC71' }}>High-Protein Meals.</span>
+              Stop Wasting Groceries.{' '}
+              <span style={{ color: '#2ECC71' }}>Hit Your Protein Goals.</span>
             </h1>
             <p className="text-lg md:text-xl text-[#6b6b6b] leading-relaxed">
-              Scan your fridge and get AI-powered meal ideas built for athletes and fitness-focused people. Complete nutrition info included—no guesswork, no wasted food.
+              Scan your fridge, get high-protein meals using what you have. Complete nutrition included—no tracking, no wasted food.
             </p>
             <div className="flex justify-start">
               <Link

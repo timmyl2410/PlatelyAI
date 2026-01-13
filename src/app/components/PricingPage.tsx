@@ -92,7 +92,7 @@ export function PricingPage() {
       name: 'Free',
       tier: 'free' as const,
       price: TIER_PRICES.free,
-      description: 'Perfect for trying out PlatelyAI',
+      description: 'Test it out—no credit card required',
       icon: Sparkles,
       features: getTierFeatures('free'),
       cta: 'Get Started Free',
@@ -104,7 +104,7 @@ export function PricingPage() {
       name: 'Premium',
       tier: 'premium' as const,
       price: TIER_PRICES.premium,
-      description: 'For serious meal planners',
+      description: 'Unlimited meals—less than one meal kit',
       icon: Zap,
       features: getTierFeatures('premium'),
       cta: 'Upgrade to Premium',
@@ -116,7 +116,7 @@ export function PricingPage() {
       name: 'Pro',
       tier: 'pro' as const,
       price: TIER_PRICES.pro,
-      description: 'Ultimate meal planning experience',
+      description: 'Advanced features for serious athletes',
       icon: Crown,
       features: getTierFeatures('pro'),
       cta: 'Notify Me',
@@ -134,11 +134,11 @@ export function PricingPage() {
           className="text-4xl md:text-5xl lg:text-6xl mb-4"
           style={{ fontWeight: 700, color: '#2C2C2C' }}
         >
-          Simple, Transparent{' '}
-          <span style={{ color: '#2ECC71' }}>Pricing</span>
+          Save Time. Save Money.{' '}
+          <span style={{ color: '#2ECC71' }}>Hit Your Goals.</span>
         </h1>
         <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-          Start free, upgrade when you need more. All plans include smart ingredient scanning.
+          Stop wasting food and guessing at macros. Start free, upgrade for unlimited meals.
         </p>
       </section>
 
