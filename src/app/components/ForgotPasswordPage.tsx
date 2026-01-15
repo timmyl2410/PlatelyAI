@@ -43,7 +43,7 @@ export function ForgotPasswordPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-12 mx-auto" />
+              <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-12 mx-auto" width="48" height="48" loading="eager" decoding="async" />
             </Link>
           </div>
 

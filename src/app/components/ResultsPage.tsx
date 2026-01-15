@@ -558,7 +558,7 @@ export function ResultsPage() {
       setGenerating(true);
       setError(null);
 
-      const ingredients = (() => {
+      const ingredientsToUse = ingredients.length > 0 ? ingredients : (() => {
         try {
           const raw = sessionStorage.getItem('plately:lastIngredients');
           const parsed = raw ? JSON.parse(raw) : null;
@@ -568,7 +568,7 @@ export function ResultsPage() {
         }
       })();
 
-      if (!ingredients.length) {
+      if (!ingredientsToUse.length) {
         throw new Error('No ingredients found. Go back and scan a photo first.');
       }
 
@@ -587,7 +587,7 @@ export function ResultsPage() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          ingredients,
+          ingredients: ingredientsToUse,
           goal,
           filters: filtersArray,
         }),
@@ -942,6 +942,8 @@ export function ResultsPage() {
                       src={imageUrl}
                       alt={getMealTitle(meal)}
                       className="absolute inset-0 w-full h-full object-cover"
+                      width="380"
+                      height="192"
                       loading="lazy"
                       decoding="async"
                       referrerPolicy="no-referrer"

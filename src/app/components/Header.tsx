@@ -10,7 +10,7 @@ export function Header() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [hasSavedMeals, setHasSavedMeals] = useState(false);
   const [profilePhotoURL, setProfilePhotoURL] = useState('');
@@ -75,7 +75,15 @@ export function Header() {
         <div className="flex justify-between items-center h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-8 md:h-10" />
+            <img 
+              src="/PlatelyAI Logo.png" 
+              alt="PlatelyAI" 
+              className="h-8 md:h-10" 
+              width="40" 
+              height="40"
+              loading="eager"
+              decoding="async"
+            />
             <span className="text-xl md:text-2xl" style={{ fontWeight: 600, color: '#2C2C2C' }}>
               PlatelyAI
             </span>

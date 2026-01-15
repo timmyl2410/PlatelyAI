@@ -7,7 +7,7 @@ export function PrivacyPolicyPage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-8" />
+            <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-8" width="32" height="32" loading="eager" decoding="async" />
             <span className="text-xl" style={{ fontWeight: 600, color: '#2C2C2C' }}>
               PlatelyAI
             </span>

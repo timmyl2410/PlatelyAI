@@ -84,7 +84,7 @@ export function SignUpPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-12 mx-auto" />
+            <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-12 mx-auto" width="48" height="48" loading="eager" decoding="async" />
           </Link>
           <p className="text-gray-600 mt-2">Create your account and start building high-protein meals</p>
         </div>

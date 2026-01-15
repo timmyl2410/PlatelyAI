@@ -28,9 +28,18 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://myplately.com/" />
     
+    <!-- Preconnect to external domains for faster loading -->
+    <link rel="preconnect" href="https://storage.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://storage.googleapis.com" />
+    <link rel="preconnect" href="https://firebaseapp.com" crossorigin />
+    <link rel="dns-prefetch" href="https://firebaseapp.com" />
+    
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/PlatelyAI Logo.png" />
     <link rel="apple-touch-icon" href="/PlatelyAI Logo.png" />
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/PlatelyAI Logo.png" as="image" type="image/png" />
     
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Camera, Upload, Star, Sparkles, FileText, Package } from 'lucide-react';
+import { Camera, Sparkles, FileText, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/useAuth';
 import { getCurrentInventory } from '../../lib/inventory';
@@ -287,7 +287,7 @@ export function HomePage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-8" />
+                <img src="/PlatelyAI Logo.png" alt="PlatelyAI" className="h-8" width="32" height="32" loading="lazy" decoding="async" />
                 <span className="text-xl" style={{ fontWeight: 600 }}>
                   PlatelyAI
                 </span>
