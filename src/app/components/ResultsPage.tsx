@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Clock, ChefHat, TrendingUp, Flame, RefreshCw, ExternalLink, SlidersHorizontal, ChevronDown, Lock, ChevronUp, Plus, X, Loader2, Info } from 'lucide-react';
+import { Clock, ChefHat, TrendingUp, Flame, RefreshCw, ExternalLink, SlidersHorizontal, ChevronDown, Lock, ChevronUp, Plus, X, Loader2, Info, Sparkles } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 import { getOrCreateUserEntitlements } from '../../lib/firestoreUsers';
 import { canSeeImages, canSeeFullMacros, canSeeRecipeLinks } from '../../lib/entitlements';
