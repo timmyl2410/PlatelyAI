@@ -6,6 +6,7 @@ import { MobileUploadPage } from './components/MobileUploadPage';
 import { ReviewFoodsPage } from './components/ReviewFoodsPage';
 import { LoadingPage } from './components/LoadingPage';
 import { ResultsPage } from './components/ResultsPage';
+import ErrorBoundary from './components/ErrorBoundary';
 import { PricingPage } from './components/PricingPage';
 import { HowItWorksPage } from './components/HowItWorksPage';
 import { AboutPage } from './components/AboutPage';
@@ -42,7 +43,11 @@ export default function App() {
           <Route path="/mobile-upload" element={<MobileUploadPage />} />
           <Route path="/review" element={<ReviewFoodsPage />} />
           <Route path="/loading" element={<LoadingPage />} />
-          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/results" element={
+            <ErrorBoundary>
+              <ResultsPage />
+            </ErrorBoundary>
+          } />
         </Routes>
       </div>
     </BrowserRouter>

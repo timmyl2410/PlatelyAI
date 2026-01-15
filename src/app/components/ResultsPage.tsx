@@ -604,6 +604,9 @@ export function ResultsPage() {
         // ignore
       }
     } catch (e) {
+      // Log full error for easier debugging in production
+      // eslint-disable-next-line no-console
+      console.error('generateMore error', e);
       setError(e instanceof Error ? e.message : 'Meal generation failed');
     } finally {
       setGenerating(false);
