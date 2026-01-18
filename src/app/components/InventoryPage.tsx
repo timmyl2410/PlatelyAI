@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Camera, Sparkles, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 import {
-  getCurrentInventory,
-  updateInventoryItems,
-  type Inventory,
-  type InventoryItem,
+  getInventoryItems,
+  getInventoryDoc,
+  addInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
   normalizeIngredientName,
   toTitleCase,
 } from '../../lib/inventory';
+import type { InventoryItem, InventoryDoc } from '@plately/shared';
 import { categorizeFood } from '../../utils/foodCategorization';
 
 // Category order for display
@@ -31,42 +33,24 @@ const CATEGORY_ORDER = [
 // ============================================================================
 
 type InventoryEditorProps = {
-  inventory: Inventory;
-  onSave: (items: InventoryItem[]) => Promise<void>;
+  items: (InventoryItem & { id: string })[];
+  inventoryDoc: InventoryDoc | null;
+  onAddItem: (item: Omit<InventoryItem, 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onUpdateItem: (itemId: string, updates: Partial<InventoryItem>) => Promise<void>;
+  onDeleteItem: (itemId: string) => Promise<void>;
   onRescan: () => void;
   onGenerateMeals: () => void;
   loading?: boolean;
 };
 
-function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading }: InventoryEditorProps) {
-  const [items, setItems] = useState<InventoryItem[]>(inventory.items);
+function InventoryEditor({ items, inventoryDoc, onAddItem, onUpdateItem, onDeleteItem, onRescan, onGenerateMeals, loading }: InventoryEditorProps) {
   const [newItemName, setNewItemName] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [addingItem, setAddingItem] = useState(false);
   const [showSavedCheck, setShowSavedCheck] = useState(false);
-
-  // Auto-save with minimal delay
-  useEffect(() => {
-    const saveTimer = setTimeout(async () => {
-      if (JSON.stringify(items) !== JSON.stringify(inventory.items)) {
-        setSaving(true);
-        try {
-          await onSave(items);
-          setShowSavedCheck(true);
-          setTimeout(() => setShowSavedCheck(false), 2000);
-        } catch (error) {
-          console.error('Failed to save:', error);
-        } finally {
-          setSaving(false);
-        }
-      }
-    }, 500);
-
-    return () => clearTimeout(saveTimer);
-  }, [items]);
 
   const handleAddItem = async () => {
     const trimmed = newItemName.trim();
-    if (!trimmed) return;
+    if (!trimmed || addingItem) return;
 
     // Check for duplicates
     const normalized = normalizeIngredientName(trimmed);
@@ -77,36 +61,58 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
       return;
     }
 
-    // Auto-categorize with existing AI logic
-    const titleCased = toTitleCase(trimmed);
-    const categoryResult = await categorizeFood(titleCased, 'http://localhost:5000');
+    setAddingItem(true);
+    try {
+      // Auto-categorize with existing AI logic
+      const titleCased = toTitleCase(trimmed);
+      const categoryResult = await categorizeFood(titleCased, 'http://localhost:5000');
 
-    const newItem: InventoryItem = {
-      id: `user_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      name: titleCased,
-      addedBy: 'user',
-      updatedAt: new Date(),
-      category: categoryResult.category,
-    };
+      await onAddItem({
+        name: titleCased,
+        source: 'user',
+        category: categoryResult.category || 'Other',
+        quantity: null,
+        unit: null,
+        confidence: null,
+        expiresAt: null,
+      });
 
-    setItems([...items, newItem]);
-    setNewItemName('');
+      setNewItemName('');
+      setShowSavedCheck(true);
+      setTimeout(() => setShowSavedCheck(false), 2000);
+    } catch (error) {
+      console.error('Failed to add item:', error);
+      alert('Failed to add item. Please try again.');
+    } finally {
+      setAddingItem(false);
+    }
   };
 
-  const handleRemoveItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const handleRemoveItem = async (itemId: string) => {
+    try {
+      await onDeleteItem(itemId);
+      setShowSavedCheck(true);
+      setTimeout(() => setShowSavedCheck(false), 2000);
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      alert('Failed to delete item. Please try again.');
+    }
   };
 
-  const handleUpdateItemName = async (id: string, newName: string) => {
-    // Re-categorize on name change
-    const categoryResult = await categorizeFood(newName, 'http://localhost:5000');
-    setItems(
-      items.map(item =>
-        item.id === id
-          ? { ...item, name: newName, updatedAt: new Date(), category: categoryResult.category }
-          : item
-      )
-    );
+  const handleUpdateItemName = async (itemId: string, newName: string) => {
+    try {
+      // Re-categorize on name change
+      const categoryResult = await categorizeFood(newName, 'http://localhost:5000');
+      await onUpdateItem(itemId, {
+        name: newName,
+        category: categoryResult.category || 'Other',
+      });
+      setShowSavedCheck(true);
+      setTimeout(() => setShowSavedCheck(false), 2000);
+    } catch (error) {
+      console.error('Failed to update item:', error);
+      alert('Failed to update item. Please try again.');
+    }
   };
 
   const formatDate = (date: Date | { toDate: () => Date } | undefined) => {
@@ -132,19 +138,12 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
   return (
     <div className="space-y-6">
       {/* Last Scan Info */}
-      {inventory.lastScan && (
+      {inventoryDoc?.lastScannedAt && (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
           <div className="flex items-center gap-4">
-            {inventory.lastScan.photoUrl && (
-              <img
-                src={inventory.lastScan.photoUrl}
-                alt="Last scan"
-                className="w-20 h-20 object-cover rounded-lg"
-              />
-            )}
             <div className="flex-1">
               <p className="text-sm text-gray-600">
-                Last scanned: {formatDate(inventory.lastScan.scannedAt)}
+                Last scanned: {formatDate(inventoryDoc.lastScannedAt)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {items.length} {items.length === 1 ? 'item' : 'items'} in inventory
@@ -205,7 +204,7 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
                   <span className="text-xs font-normal text-gray-500 ml-1">({groupedItems[category].length})</span>
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {groupedItems[category].map((item) => (
+                  {groupedItems[category].map((item: InventoryItem & { id: string }) => (
                     <div
                       key={item.id}
                       className="relative flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#2ECC71] transition-all group"
@@ -242,15 +241,15 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
         {/* Primary CTA: Generate Meals */}
         <button
           onClick={onGenerateMeals}
-          disabled={items.length === 0 || saving}
+          disabled={items.length === 0}
           className={`w-full py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-            items.length > 0 && !saving
+            items.length > 0
               ? 'bg-[#2ECC71] text-white hover:bg-[#27AE60] shadow-lg hover:shadow-xl'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
           <Sparkles className="w-5 h-5" />
-          {items.length === 0 ? 'Add Items First' : saving ? 'Saving...' : 'Generate Meals from Inventory'}
+          {items.length === 0 ? 'Add Items First' : 'Generate Meals from Inventory'}
         </button>
 
         {/* Secondary Actions */}
@@ -276,7 +275,8 @@ function InventoryEditor({ inventory, onSave, onRescan, onGenerateMeals, loading
 export function InventoryPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [inventory, setInventory] = useState<Inventory | null>(null);
+  const [items, setItems] = useState<(InventoryItem & { id: string })[]>([]);
+  const [inventoryDoc, setInventoryDoc] = useState<InventoryDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -296,8 +296,12 @@ export function InventoryPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await getCurrentInventory(user.uid);
-        setInventory(data);
+        const [itemsData, docData] = await Promise.all([
+          getInventoryItems(user.uid),
+          getInventoryDoc(user.uid),
+        ]);
+        setItems(itemsData);
+        setInventoryDoc(docData);
       } catch (err) {
         console.error('Failed to load inventory:', err);
         setError(err instanceof Error ? err.message : 'Failed to load inventory');
@@ -309,17 +313,31 @@ export function InventoryPage() {
     loadInventory();
   }, [user]);
 
-  const handleSave = async (items: InventoryItem[]) => {
+  const handleAddItem = async (item: Omit<InventoryItem, 'createdAt' | 'updatedAt'>) => {
     if (!user) return;
+    
+    await addInventoryItem(user.uid, item);
+    // Reload items to get the new one with ID
+    const updatedItems = await getInventoryItems(user.uid);
+    setItems(updatedItems);
+  };
 
-    try {
-      await updateInventoryItems(user.uid, items);
-      // Refresh inventory
-      const updated = await getCurrentInventory(user.uid);
-      setInventory(updated);
-    } catch (err) {
-      throw err;
-    }
+  const handleUpdateItem = async (itemId: string, updates: Partial<InventoryItem>) => {
+    if (!user) return;
+    
+    await updateInventoryItem(user.uid, itemId, updates);
+    // Update local state
+    setItems(prevItems =>
+      prevItems.map(item => (item.id === itemId ? { ...item, ...updates } : item))
+    );
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!user) return;
+    
+    await deleteInventoryItem(user.uid, itemId);
+    // Update local state
+    setItems(prevItems => prevItems.filter(item => item.id !== itemId));
   };
 
   const handleRescan = () => {
@@ -327,10 +345,10 @@ export function InventoryPage() {
   };
 
   const handleGenerateMeals = () => {
-    if (!inventory || inventory.items.length === 0) return;
+    if (items.length === 0) return;
 
     // Navigate directly to review page with inventory ingredients
-    const ingredientNames = inventory.items.map(item => item.name).filter(Boolean);
+    const ingredientNames = items.map(item => item.name).filter(Boolean);
     
     navigate('/review', {
       state: {
@@ -374,7 +392,7 @@ export function InventoryPage() {
   }
 
   // ONBOARDING STATE: No inventory yet
-  if (!inventory || inventory.items.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="min-h-screen bg-[#F9FAF7] flex items-center justify-center py-12">
         <div className="max-w-md mx-auto px-4 text-center">
@@ -415,8 +433,11 @@ export function InventoryPage() {
         </div>
 
         <InventoryEditor
-          inventory={inventory}
-          onSave={handleSave}
+          items={items}
+          inventoryDoc={inventoryDoc}
+          onAddItem={handleAddItem}
+          onUpdateItem={handleUpdateItem}
+          onDeleteItem={handleDeleteItem}
           onRescan={handleRescan}
           onGenerateMeals={handleGenerateMeals}
           loading={loading}

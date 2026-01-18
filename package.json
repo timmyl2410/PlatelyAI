@@ -1,11 +1,17 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "@plately/web",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "dev:web": "vite",
+    "dev:backend": "cd backend && pnpm dev",
+    "dev:mobile": "cd apps/mobile/PlatelyAIMobile && pnpm dev",
+    "check:mobile": "node -e \"const fs=require('fs'); if(!fs.existsSync('./apps/mobile/PlatelyAIMobile/package.json')){console.log('\\n⚠️  Mobile app not found!\\n\\nTo add your mobile app:\\n1. Copy your Expo/React Native repo into: ./apps/mobile/PlatelyAIMobile/\\n2. Run: cd apps/mobile/PlatelyAIMobile && pnpm install\\n3. Then run: pnpm dev:mobile\\n'); process.exit(1);} else {console.log('✅ Mobile app found');}\"",
+    "check:monorepo": "node check-monorepo.js",
+    "postinstall": "pnpm check:mobile || true"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

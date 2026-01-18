@@ -4,7 +4,7 @@ import { X, Plus, SlidersHorizontal, HelpCircle, Check } from 'lucide-react';
 import { getSession } from '../../lib/firebase';
 import { CORE_CATEGORIES, categorizeFood } from '../../utils/foodCategorization';
 import { useAuth } from '../../lib/useAuth';
-import { saveCurrentInventory, createInventoryFromScan } from '../../lib/inventory';
+import { addItemsFromScan } from '../../lib/inventory';
 
 type FoodItem = {
   id: string;
@@ -295,9 +295,20 @@ export function ReviewFoodsPage() {
     }
 
     try {
+      // Convert FoodItems to InventoryItems
+      const inventoryItems = foods.map(food => ({
+        name: food.name,
+        category: food.category,
+        source: (food.source === 'ai' || food.source === 'keyword') ? 'scan' as const : 'user' as const,
+        confidence: food.confidence || 'medium',
+        quantity: null,
+        unit: null,
+        expiresAt: null,
+      }));
+      
       const firstImageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : undefined;
-      const inventory = createInventoryFromScan(foods, firstImageUrl);
-      await saveCurrentInventory(user.uid, inventory);
+      
+      await addItemsFromScan(user.uid, inventoryItems, firstImageUrl);
       setInventorySaved(true);
       console.log('✅ Inventory saved successfully');
     } catch (error) {

@@ -1,0 +1,18 @@
+{
+  "name": "firestore-migration",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "tsx migrateFirestoreSchema.ts",
+    "migrate:dry-run": "tsx migrateFirestoreSchema.ts --dry-run"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.7.0",
+    "typescript": "^5"
+  }
+}

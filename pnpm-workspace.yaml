@@ -1,0 +1,13 @@
+# PNPM Workspace Configuration
+# This enables a monorepo structure without moving the existing web app
+
+packages:
+  # Shared packages (types, utils, config)
+  - 'packages/*'
+  
+  # Mobile app (nested in PlatelyAIMobile subfolder)
+  - 'apps/mobile/PlatelyAIMobile'
+  
+  # Backend (optional - only if we want to integrate it as a workspace package)
+  # Currently backend/ exists but is independent
+  # - 'backend'

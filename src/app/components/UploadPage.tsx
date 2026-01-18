@@ -40,10 +40,10 @@ export function UploadPage() {
     if (fromInventory && user && !inventoryLoaded) {
       const loadInventoryIngredients = async () => {
         try {
-          const { getCurrentInventory } = await import('../../lib/inventory');
-          const inventory = await getCurrentInventory(user.uid);
+          const { getInventoryItems } = await import('../../lib/inventory');
+          const items = await getInventoryItems(user.uid);
           
-          if (inventory && inventory.items.length > 0) {
+          if (items && items.length > 0) {
             // Mark as complete so user can proceed to review
             setFridgeStatus('complete');
             setPantryStatus('complete');

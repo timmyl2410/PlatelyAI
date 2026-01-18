@@ -1,6 +1,7 @@
 // Netlify Function: POST /api/scan -> /.netlify/functions/scan
 // Scans images to detect foods using OpenAI Vision API
 
+import { getFirestore, admin } from './_lib/firebaseAdmin.js';
 import { parseJsonFromModel, OPENAI_MODEL, corsHeaders, handleOptions, successResponse, errorResponse } from './_lib/helpers.js';
 
 export async function handler(event, context) {
@@ -9,15 +10,31 @@ export async function handler(event, context) {
     return handleOptions();
   }
 
+  const db = getFirestore();
+  const scanId = `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  let scanRunRef = null;
+
   try {
     const body = JSON.parse(event.body || '{}');
-    const { imageUrls } = body;
+    const { imageUrls, userId } = body;
 
     console.log('🧠 /api/scan called');
     console.log('   imageUrls:', Array.isArray(imageUrls) ? imageUrls.length : 'not-an-array');
+    console.log('   userId:', userId || 'not-provided');
 
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
       return errorResponse('Missing imageUrls (array)', 400);
+    }
+
+    // Create scan run document if userId provided
+    if (userId) {
+      scanRunRef = db.doc(`scans/${userId}/runs/${scanId}`);
+      await scanRunRef.set({
+        status: 'processing',
+        startedAt: admin.firestore.FieldValue.serverTimestamp(),
+        imageCount: imageUrls.length,
+      });
+      console.log(`   📝 Created scan run: scans/${userId}/runs/${scanId}`);
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -82,9 +99,33 @@ export async function handler(event, context) {
       .filter((f) => f && typeof f.name === 'string' && typeof f.category === 'string')
       .map((f) => ({ name: f.name.trim(), category: f.category.trim() }));
 
-    return successResponse({ foods });
+    // Update scan run to done
+    if (scanRunRef) {
+      await scanRunRef.update({
+        status: 'done',
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        extractedCount: foods.length,
+      });
+      console.log(`   ✅ Scan run completed: ${foods.length} foods extracted`);
+    }
+
+    return successResponse({ foods, scanId });
   } catch (error) {
     console.error('❌ /api/scan failed:', error);
+
+    // Update scan run to failed
+    if (scanRunRef) {
+      try {
+        await scanRunRef.update({
+          status: 'failed',
+          completedAt: admin.firestore.FieldValue.serverTimestamp(),
+          error: error?.message || String(error),
+        });
+      } catch (updateError) {
+        console.error('Failed to update scan run status:', updateError);
+      }
+    }
+
     return errorResponse('Scan failed', 500, error?.message || String(error));
   }
 }

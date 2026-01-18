@@ -3,6 +3,7 @@ node_modules/
 
 # Build outputs
 dist/
+packages/*/dist/
 
 # Environment files (secrets)
 .env
@@ -13,3 +14,9 @@ backend/.env.*
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Monorepo
+# Mobile app (add it yourself, don't commit until ready)
+apps/mobile/*
+!apps/mobile/README.md
+!apps/mobile/.gitkeep

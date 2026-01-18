@@ -1,34 +1,43 @@
 // ============================================================================
-// SAVED INVENTORY DATA LAYER
-// Simple Firestore CRUD for user's saved fridge inventory
+// CANONICAL INVENTORY DATA LAYER
+// Firestore CRUD for user inventory using new schema:
+// - inventories/{uid} = InventoryDoc (parent doc)
+// - inventories/{uid}/items/{itemId} = InventoryItem (subcollection)
 // ============================================================================
 
 import { db } from './firebase';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc,
+  collection,
+  query,
+  getDocs,
+  serverTimestamp,
+  writeBatch,
+  Timestamp
+} from 'firebase/firestore';
+import type { InventoryDoc, InventoryItem } from '@plately/shared';
 
 // ============================================================================
-// TYPE DEFINITIONS
+// HELPER: Ensure inventory parent doc exists
 // ============================================================================
 
-export type InventoryItem = {
-  id: string;
-  name: string;
-  quantity?: string;
-  unit?: string;
-  category?: string;
-  addedBy: 'ai' | 'user';
-  updatedAt: Date;
-};
-
-export type LastScan = {
-  photoUrl: string;
-  scannedAt: Date | { toDate: () => Date }; // Support both Date and Firestore Timestamp
-};
-
-export type Inventory = {
-  items: InventoryItem[];
-  lastScan?: LastScan;
-  updatedAt: Date;
+export const ensureInventoryDocExists = async (uid: string): Promise<void> => {
+  const inventoryRef = doc(db, 'inventories', uid);
+  const inventorySnap = await getDoc(inventoryRef);
+  
+  if (!inventorySnap.exists()) {
+    console.log('📦 Creating inventory parent doc for user:', uid);
+    await setDoc(inventoryRef, {
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      itemsCount: 0,
+      source: 'manual',
+    } as Partial<InventoryDoc>);
+  }
 };
 
 // ============================================================================
@@ -52,171 +61,346 @@ export const toTitleCase = (str: string): string => {
 };
 
 // ============================================================================
-// GET CURRENT INVENTORY
+// GET INVENTORY DOC (parent document)
 // ============================================================================
 
-export const getCurrentInventory = async (uid: string): Promise<Inventory | null> => {
+export const getInventoryDoc = async (uid: string): Promise<InventoryDoc | null> => {
   try {
-    console.log('📦 Fetching inventory for user:', uid);
-    const docRef = doc(db, 'inventories', uid, 'current', 'data');
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      console.log('✅ Inventory found:', data);
-      
-      // Convert Firestore Timestamps to Dates
-      let lastScan = data.lastScan;
-      if (lastScan?.scannedAt) {
-        lastScan = {
-          ...lastScan,
-          scannedAt: lastScan.scannedAt.toDate ? lastScan.scannedAt.toDate() : lastScan.scannedAt
-        };
-      }
-      
+    const inventoryRef = doc(db, 'inventories', uid);
+    const inventorySnap = await getDoc(inventoryRef);
+    
+    if (inventorySnap.exists()) {
+      const data = inventorySnap.data() as InventoryDoc;
       return {
-        items: data.items || [],
-        lastScan,
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        ...data,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
+        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt,
+        lastScannedAt: data.lastScannedAt instanceof Timestamp ? data.lastScannedAt.toDate() : data.lastScannedAt,
       };
-    } else {
-      console.log('ℹ️ No inventory found for user');
-      return null;
     }
+    return null;
   } catch (error) {
-    console.error('❌ Error fetching inventory:', error);
+    console.error('❌ Error fetching inventory doc:', error);
     throw error;
   }
 };
 
 // ============================================================================
-// SAVE/UPDATE CURRENT INVENTORY
+// GET ALL INVENTORY ITEMS
 // ============================================================================
 
-export const saveCurrentInventory = async (
+export const getInventoryItems = async (uid: string): Promise<(InventoryItem & { id: string })[]> => {
+  try {
+    console.log('📦 Fetching inventory items for user:', uid);
+    
+    const itemsRef = collection(db, 'inventories', uid, 'items');
+    const itemsSnap = await getDocs(query(itemsRef));
+    
+    const items: (InventoryItem & { id: string })[] = [];
+    itemsSnap.forEach((doc) => {
+      const data = doc.data() as InventoryItem;
+      items.push({
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
+        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt,
+        expiresAt: data.expiresAt instanceof Timestamp ? data.expiresAt.toDate() : data.expiresAt,
+      });
+    });
+    
+    console.log(`✅ Found ${items.length} inventory items`);
+    return items;
+  } catch (error) {
+    console.error('❌ Error fetching inventory items:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// ADD INVENTORY ITEM
+// ============================================================================
+
+export const addInventoryItem = async (
   uid: string,
-  inventory: Omit<Inventory, 'updatedAt'>
+  item: Omit<InventoryItem, 'createdAt' | 'updatedAt'>
+): Promise<string> => {
+  try {
+    console.log('➕ Adding inventory item for user:', uid, item.name);
+    
+    // Ensure parent doc exists
+    await ensureInventoryDocExists(uid);
+    
+    // Create item document with auto-generated ID
+    const itemsRef = collection(db, 'inventories', uid, 'items');
+    const newItemRef = doc(itemsRef);
+    
+    await setDoc(newItemRef, {
+      ...item,
+      name: toTitleCase(item.name),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update parent doc itemsCount
+    const inventoryRef = doc(db, 'inventories', uid);
+    const items = await getInventoryItems(uid);
+    await updateDoc(inventoryRef, {
+      itemsCount: items.length,
+      updatedAt: serverTimestamp(),
+    });
+    
+    console.log('✅ Inventory item added:', newItemRef.id);
+    return newItemRef.id;
+  } catch (error) {
+    console.error('❌ Error adding inventory item:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// UPDATE INVENTORY ITEM
+// ============================================================================
+
+export const updateInventoryItem = async (
+  uid: string,
+  itemId: string,
+  updates: Partial<Omit<InventoryItem, 'createdAt' | 'updatedAt'>>
 ): Promise<void> => {
   try {
-    console.log('💾 Saving inventory for user:', uid);
-    const docRef = doc(db, 'inventories', uid, 'current', 'data');
-
-    // Remove duplicates based on normalized name
-    const uniqueItems = inventory.items.reduce((acc, item) => {
-      const normalized = normalizeIngredientName(item.name);
-      const existing = acc.find(i => normalizeIngredientName(i.name) === normalized);
-      
-      if (!existing) {
-        acc.push({
-          ...item,
-          name: toTitleCase(item.name), // Store in Title Case
-        });
-      }
-      return acc;
-    }, [] as InventoryItem[]);
-
-    // Prepare lastScan with server timestamp if it's new
-    const lastScanToSave = inventory.lastScan ? {
-      photoUrl: inventory.lastScan.photoUrl,
-      scannedAt: serverTimestamp(), // Always use server time for accuracy
-    } : undefined;
-
-    await setDoc(docRef, {
-      items: uniqueItems,
-      ...(lastScanToSave && { lastScan: lastScanToSave }),
+    console.log('📝 Updating inventory item:', uid, itemId);
+    
+    const itemRef = doc(db, 'inventories', uid, 'items', itemId);
+    await updateDoc(itemRef, {
+      ...updates,
       updatedAt: serverTimestamp(),
     });
-
-    console.log('✅ Inventory saved successfully');
+    
+    // Update parent doc timestamp
+    const inventoryRef = doc(db, 'inventories', uid);
+    await updateDoc(inventoryRef, {
+      updatedAt: serverTimestamp(),
+    });
+    
+    console.log('✅ Inventory item updated');
   } catch (error) {
-    console.error('❌ Error saving inventory:', error);
+    console.error('❌ Error updating inventory item:', error);
     throw error;
   }
 };
 
 // ============================================================================
-// UPDATE ONLY ITEMS (keep lastScan unchanged)
+// DELETE INVENTORY ITEM
 // ============================================================================
 
-export const updateInventoryItems = async (uid: string, items: InventoryItem[]): Promise<void> => {
+export const deleteInventoryItem = async (uid: string, itemId: string): Promise<void> => {
   try {
-    console.log('📝 Updating inventory items for user:', uid);
-    const docRef = doc(db, 'inventories', uid, 'current', 'data');
+    console.log('🗑️ Deleting inventory item:', uid, itemId);
+    
+    const itemRef = doc(db, 'inventories', uid, 'items', itemId);
+    await deleteDoc(itemRef);
+    
+    // Update parent doc itemsCount
+    const inventoryRef = doc(db, 'inventories', uid);
+    const items = await getInventoryItems(uid);
+    await updateDoc(inventoryRef, {
+      itemsCount: items.length,
+      updatedAt: serverTimestamp(),
+    });
+    
+    console.log('✅ Inventory item deleted');
+  } catch (error) {
+    console.error('❌ Error deleting inventory item:', error);
+    throw error;
+  }
+};
 
-    // Remove duplicates
-    const uniqueItems = items.reduce((acc, item) => {
+// ============================================================================
+// BATCH ADD ITEMS FROM SCAN
+// ============================================================================
+
+export const addItemsFromScan = async (
+  uid: string,
+  items: Array<{ name: string; category?: string; confidence?: number }>
+): Promise<void> => {
+  try {
+    console.log('📦 Adding items from scan for user:', uid, items.length);
+    
+    // Ensure parent doc exists
+    await ensureInventoryDocExists(uid);
+    
+    const batch = writeBatch(db);
+    const itemsRef = collection(db, 'inventories', uid, 'items');
+    
+    // Get existing items to avoid duplicates
+    const existingItems = await getInventoryItems(uid);
+    const existingNames = new Set(
+      existingItems.map(item => normalizeIngredientName(item.name))
+    );
+    
+    let addedCount = 0;
+    items.forEach((item) => {
       const normalized = normalizeIngredientName(item.name);
-      const existing = acc.find(i => normalizeIngredientName(i.name) === normalized);
-      
-      if (!existing) {
-        acc.push({
-          ...item,
+      if (!existingNames.has(normalized)) {
+        const newItemRef = doc(itemsRef);
+        batch.set(newItemRef, {
           name: toTitleCase(item.name),
+          category: item.category,
+          confidence: item.confidence,
+          source: 'ai',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
+        existingNames.add(normalized);
+        addedCount++;
       }
-      return acc;
-    }, [] as InventoryItem[]);
-
-    await updateDoc(docRef, {
-      items: uniqueItems,
-      updatedAt: serverTimestamp(),
     });
-
-    console.log('✅ Inventory items updated');
+    
+    // Update parent doc
+    const inventoryRef = doc(db, 'inventories', uid);
+    batch.update(inventoryRef, {
+      itemsCount: existingItems.length + addedCount,
+      lastScannedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      source: 'scan',
+    });
+    
+    await batch.commit();
+    console.log(`✅ Added ${addedCount} new items from scan`);
   } catch (error) {
-    console.error('❌ Error updating inventory items:', error);
+    console.error('❌ Error adding items from scan:', error);
     throw error;
   }
 };
 
 // ============================================================================
-// SET LAST SCAN INFO (photo + timestamp)
+// CLEAR ALL INVENTORY ITEMS
 // ============================================================================
 
-export const setLastScan = async (uid: string, lastScan: LastScan): Promise<void> => {
+export const clearInventory = async (uid: string): Promise<void> => {
   try {
-    console.log('📸 Setting last scan info for user:', uid);
-    const docRef = doc(db, 'inventories', uid, 'current', 'data');
-
-    await updateDoc(docRef, {
-      lastScan,
+    console.log('🗑️ Clearing all inventory items for user:', uid);
+    
+    const itemsRef = collection(db, 'inventories', uid, 'items');
+    const itemsSnap = await getDocs(query(itemsRef));
+    
+    const batch = writeBatch(db);
+    itemsSnap.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    
+    // Update parent doc
+    const inventoryRef = doc(db, 'inventories', uid);
+    batch.update(inventoryRef, {
+      itemsCount: 0,
       updatedAt: serverTimestamp(),
     });
-
-    console.log('✅ Last scan info updated');
+    
+    await batch.commit();
+    console.log('✅ Inventory cleared');
   } catch (error) {
-    console.error('❌ Error updating last scan:', error);
+    console.error('❌ Error clearing inventory:', error);
     throw error;
   }
 };
 
 // ============================================================================
-// CREATE INVENTORY FROM SCAN RESULTS
-// Helper to convert scanned food items to inventory items
+// MIGRATION HELPERS (for backward compatibility)
 // ============================================================================
 
+/**
+ * @deprecated Legacy function for old schema
+ * Use getInventoryItems() instead
+ */
+export const getCurrentInventory = async (uid: string): Promise<any> => {
+  console.warn('⚠️ getCurrentInventory is deprecated. Use getInventoryItems() instead.');
+  const items = await getInventoryItems(uid);
+  const inventoryDoc = await getInventoryDoc(uid);
+  
+  return {
+    items: items.map(item => ({
+      id: crypto.randomUUID(),
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+      addedBy: item.source,
+      updatedAt: item.updatedAt,
+    })),
+    updatedAt: inventoryDoc?.updatedAt || new Date(),
+    lastScan: inventoryDoc?.lastScannedAt ? {
+      scannedAt: inventoryDoc.lastScannedAt,
+      photoUrl: '',
+    } : undefined,
+  };
+};
+
+/**
+ * @deprecated Legacy function for old schema
+ */
+export const saveCurrentInventory = async (uid: string, inventory: any): Promise<void> => {
+  console.warn('⚠️ saveCurrentInventory is deprecated. Use addInventoryItem() instead.');
+  await ensureInventoryDocExists(uid);
+  
+  if (inventory.items && Array.isArray(inventory.items)) {
+    for (const item of inventory.items) {
+      await addInventoryItem(uid, {
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        source: item.addedBy || 'user',
+      });
+    }
+  }
+};
+
+/**
+ * @deprecated Legacy function for old schema
+ */
+export const updateInventoryItems = async (uid: string, items: any[]): Promise<void> => {
+  console.warn('⚠️ updateInventoryItems is deprecated. Use addInventoryItem() instead.');
+  await ensureInventoryDocExists(uid);
+  
+  for (const item of items) {
+    await addInventoryItem(uid, {
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+      source: item.addedBy || 'user',
+    });
+  }
+};
+
+/**
+ * @deprecated Legacy function for old schema
+ */
+export const setLastScan = async (uid: string, lastScan: any): Promise<void> => {
+  console.warn('⚠️ setLastScan is deprecated. lastScannedAt is now updated automatically.');
+  await ensureInventoryDocExists(uid);
+  
+  const inventoryRef = doc(db, 'inventories', uid);
+  await updateDoc(inventoryRef, {
+    lastScannedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+};
+
+/**
+ * @deprecated Legacy function for old schema
+ */
 export const createInventoryFromScan = (
   foods: Array<{ id: string; name: string; category?: string }>,
   photoUrl?: string
-): Omit<Inventory, 'updatedAt'> => {
-  const items: InventoryItem[] = foods.map(food => ({
-    id: food.id,
-    name: food.name,
-    category: food.category,
-    addedBy: 'ai' as const,
-    updatedAt: new Date(),
-  }));
-
-  const inventory: Omit<Inventory, 'updatedAt'> = {
-    items,
+): any => {
+  console.warn('⚠️ createInventoryFromScan is deprecated. Use addItemsFromScan() instead.');
+  return {
+    items: foods.map(food => ({
+      id: food.id,
+      name: food.name,
+      category: food.category,
+      addedBy: 'ai' as const,
+      updatedAt: new Date(),
+    })),
   };
-
-  if (photoUrl) {
-    inventory.lastScan = {
-      photoUrl,
-      scannedAt: new Date(),
-    };
-  }
-
-  return inventory;
 };
