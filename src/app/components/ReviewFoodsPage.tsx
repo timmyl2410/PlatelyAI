@@ -41,6 +41,7 @@ export function ReviewFoodsPage() {
   const { user } = useAuth();
   const imageUrlsFromState = (location.state as any)?.imageUrls as string[] | undefined;
   const detectedIngredientsFromState = (location.state as any)?.detectedIngredients as string[] | undefined;
+  const inventoryItemsFromState = (location.state as any)?.inventoryItems as Array<{name: string, category: string}> | undefined;
   const fromInventory = (location.state as any)?.fromInventory as boolean | undefined;
 
   const queryParams = new URLSearchParams(location.search);
@@ -96,18 +97,36 @@ export function ReviewFoodsPage() {
         setLoadError(null);
         setScanProgress(10);
 
-        // If coming from inventory, load those ingredients directly
-        // No need to categorize again - they're already in inventory with categories
+        // If coming from inventory, load those ingredients directly with their categories
+        if (fromInventory && inventoryItemsFromState && inventoryItemsFromState.length > 0) {
+          setScanProgress(50);
+          
+          // Use the inventory items with their existing categories
+          const inventoryFoods: FoodItem[] = inventoryItemsFromState.map((item, i) => ({
+            id: `inv_${Date.now()}_${i}_${Math.random().toString(16).slice(2)}`,
+            name: item.name.trim(),
+            category: item.category || 'Other',
+            needsConfirmation: false,
+            source: 'user' as const,
+            confidence: 'high' as const,
+          }));
+          
+          if (!cancelled) {
+            setScanProgress(100);
+            setFoods(inventoryFoods);
+            setLoading(false);
+          }
+          return;
+        }
+        
+        // Fallback for old detectedIngredients format (for backwards compatibility)
         if (fromInventory && detectedIngredientsFromState && detectedIngredientsFromState.length > 0) {
           setScanProgress(50);
           
-          // Convert ingredient names to FoodItem format
-          // These items are already categorized in the inventory, so we use 'Other' as a safe default
-          // Users can manually adjust categories if needed
           const inventoryFoods: FoodItem[] = detectedIngredientsFromState.map((ingredientName, i) => ({
             id: `inv_${Date.now()}_${i}_${Math.random().toString(16).slice(2)}`,
             name: ingredientName.trim(),
-            category: 'Other', // Default category - user can adjust
+            category: 'Other',
             needsConfirmation: false,
             source: 'user' as const,
             confidence: 'high' as const,

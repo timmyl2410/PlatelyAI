@@ -347,13 +347,16 @@ export function InventoryPage() {
   const handleGenerateMeals = () => {
     if (items.length === 0) return;
 
-    // Navigate directly to review page with inventory ingredients
-    const ingredientNames = items.map(item => item.name).filter(Boolean);
+    // Navigate directly to review page with full inventory items (including categories)
+    const inventoryItems = items.map(item => ({
+      name: item.name,
+      category: item.category || 'Other',
+    })).filter(item => item.name);
     
     navigate('/review', {
       state: {
         fromInventory: true,
-        detectedIngredients: ingredientNames,
+        inventoryItems: inventoryItems,
       },
     });
   };
