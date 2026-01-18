@@ -23,6 +23,9 @@ importers:
       '@mui/material':
         specifier: 7.3.5
         version: 7.3.5(@emotion/react@11.14.0(@types/react@19.1.17)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.1.17)(react@18.3.1))(@types/react@19.1.17)(react@18.3.1))(@types/react@19.1.17)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@plately/shared':
+        specifier: workspace:*
+        version: link:packages/shared
       '@popperjs/core':
         specifier: 2.11.8
         version: 2.11.8

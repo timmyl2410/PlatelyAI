@@ -71,10 +71,10 @@ function InventoryEditor({ items, inventoryDoc, onAddItem, onUpdateItem, onDelet
         name: titleCased,
         source: 'user',
         category: categoryResult.category || 'Other',
-        quantity: null,
-        unit: null,
-        confidence: null,
-        expiresAt: null,
+        quantity: undefined,
+        unit: undefined,
+        confidence: undefined,
+        expiresAt: undefined,
       });
 
       setNewItemName('');
@@ -133,7 +133,7 @@ function InventoryEditor({ items, inventoryDoc, onAddItem, onUpdateItem, onDelet
     if (!acc[category]) acc[category] = [];
     acc[category].push(item);
     return acc;
-  }, {} as Record<string, InventoryItem[]>);
+  }, {} as Record<string, (InventoryItem & { id: string })[]>);
 
   return (
     <div className="space-y-6">
@@ -204,7 +204,7 @@ function InventoryEditor({ items, inventoryDoc, onAddItem, onUpdateItem, onDelet
                   <span className="text-xs font-normal text-gray-500 ml-1">({groupedItems[category].length})</span>
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {groupedItems[category].map((item: InventoryItem & { id: string }) => (
+                  {groupedItems[category].map((item) => (
                     <div
                       key={item.id}
                       className="relative flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#2ECC71] transition-all group"
@@ -217,7 +217,7 @@ function InventoryEditor({ items, inventoryDoc, onAddItem, onUpdateItem, onDelet
                       />
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">
-                          {item.addedBy === 'ai' ? 'AI' : 'User'}
+                          {item.source === 'ai' ? 'AI' : 'User'}
                         </span>
                         <button
                           onClick={() => handleRemoveItem(item.id)}

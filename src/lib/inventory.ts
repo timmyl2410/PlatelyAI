@@ -375,7 +375,7 @@ export const updateInventoryItems = async (uid: string, items: any[]): Promise<v
 /**
  * @deprecated Legacy function for old schema
  */
-export const setLastScan = async (uid: string, lastScan: any): Promise<void> => {
+export const setLastScan = async (uid: string, _lastScan: any): Promise<void> => {
   console.warn('⚠️ setLastScan is deprecated. lastScannedAt is now updated automatically.');
   await ensureInventoryDocExists(uid);
   
@@ -391,7 +391,7 @@ export const setLastScan = async (uid: string, lastScan: any): Promise<void> => 
  */
 export const createInventoryFromScan = (
   foods: Array<{ id: string; name: string; category?: string }>,
-  photoUrl?: string
+  _photoUrl?: string
 ): any => {
   console.warn('⚠️ createInventoryFromScan is deprecated. Use addItemsFromScan() instead.');
   return {

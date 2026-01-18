@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { X, Plus, SlidersHorizontal, HelpCircle, Check } from 'lucide-react';
 import { getSession } from '../../lib/firebase';
@@ -73,46 +73,49 @@ export function ReviewFoodsPage() {
   const [showCategoryPicker, setShowCategoryPicker] = useState<string | null>(null);
   const [inventorySaved, setInventorySaved] = useState(false);
 
+  // Track the last processed location key to prevent duplicate runs
+  const lastProcessedLocationKey = useRef<string | null>(null);
+
   const categories = [...CORE_CATEGORIES];
 
   useEffect(() => {
+    // Prevent duplicate runs for the same navigation
+    const currentLocationKey = location.key || 'default';
+    if (lastProcessedLocationKey.current === currentLocationKey) {
+      return;
+    }
+
     let cancelled = false;
 
     const run = async () => {
       try {
+        // Mark this location as processed
+        lastProcessedLocationKey.current = currentLocationKey;
+
         setLoading(true);
         setLoadError(null);
         setScanProgress(10);
 
         // If coming from inventory, load those ingredients directly
+        // No need to categorize again - they're already in inventory with categories
         if (fromInventory && detectedIngredientsFromState && detectedIngredientsFromState.length > 0) {
           setScanProgress(50);
           
-          // Convert ingredient names to FoodItem format with categorization
-          const categorizedFoods: FoodItem[] = [];
-          const totalIngredients = detectedIngredientsFromState.length;
-          
-          for (let i = 0; i < detectedIngredientsFromState.length; i++) {
-            const ingredientName = detectedIngredientsFromState[i].trim();
-            const result = await categorizeFood(ingredientName, backendUrl);
-            
-            categorizedFoods.push({
-              id: `inv_${Date.now()}_${i}_${Math.random().toString(16).slice(2)}`,
-              name: ingredientName,
-              category: result.category,
-              needsConfirmation: false,
-              source: 'user',
-              confidence: 'high',
-            });
-            
-            // Progress from 50% to 100%
-            const progress = 50 + Math.floor((i + 1) / totalIngredients * 50);
-            setScanProgress(progress);
-          }
+          // Convert ingredient names to FoodItem format
+          // These items are already categorized in the inventory, so we use 'Other' as a safe default
+          // Users can manually adjust categories if needed
+          const inventoryFoods: FoodItem[] = detectedIngredientsFromState.map((ingredientName, i) => ({
+            id: `inv_${Date.now()}_${i}_${Math.random().toString(16).slice(2)}`,
+            name: ingredientName.trim(),
+            category: 'Other', // Default category - user can adjust
+            needsConfirmation: false,
+            source: 'user' as const,
+            confidence: 'high' as const,
+          }));
           
           if (!cancelled) {
             setScanProgress(100);
-            setFoods(categorizedFoods);
+            setFoods(inventoryFoods);
             setLoading(false);
           }
           return;
@@ -214,7 +217,7 @@ export function ReviewFoodsPage() {
     return () => {
       cancelled = true;
     };
-  }, [imageUrls, fromInventory, detectedIngredientsFromState]);
+  }, [location.key]); // Only re-run when navigation changes
 
   const removeFood = (id: string) => {
     setFoods(foods.filter((food) => food.id !== id));

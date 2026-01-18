@@ -30,7 +30,6 @@ export function UploadPage() {
   const [pantrySessionId, setPantrySessionId] = useState<string | null>(null);
   const [fridgeUploadedImages, setFridgeUploadedImages] = useState<Array<{ url: string; uploadedAt: any }>>([]);
   const [pantryUploadedImages, setPantryUploadedImages] = useState<Array<{ url: string; uploadedAt: any }>>([]);
-  const [isPolling, setIsPolling] = useState(false);
   const [inventoryLoaded, setInventoryLoaded] = useState(false);
 
   // =========================================================================
@@ -148,8 +147,7 @@ export function UploadPage() {
   // =========================================================================
   // FUNCTION: Poll Firebase for new uploads
   // =========================================================================
-  const startPolling = async (sessionId: string, type: 'fridge' | 'pantry') => {
-    setIsPolling(true);
+  const _startPolling = async (sessionId: string, type: 'fridge' | 'pantry') => {
     const pollInterval = setInterval(async () => {
       try {
         const session = (await getSession(sessionId)) as SessionData | null;
