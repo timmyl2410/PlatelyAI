@@ -19,16 +19,17 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware - CORS with optimized settings
+// Middleware - CORS with explicit origins for mobile app
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: ['http://localhost:8081', 'http://localhost:3000', 'https://platelyai.com', 'https://www.platelyai.com', 'https://myplately.com', 'https://www.myplately.com'],
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['Content-Length', 'X-Request-Id'],
   maxAge: 86400, // Cache preflight for 24 hours
 }));
 
-// Handle OPTIONS requests explicitly for faster response
+// Explicit OPTIONS handler for preflight requests
 app.options('*', cors());
 
 // Stripe webhook needs raw body - must come before express.json()
