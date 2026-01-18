@@ -50,4 +50,8 @@ export const getBucket = () => {
   return getFirebaseAdminApp().storage().bucket();
 };
 
+export const getAuth = () => {
+  return getFirebaseAdminApp().auth();
+};
+
 export { admin };
