@@ -619,7 +619,17 @@ export function ResultsPage() {
         }),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || 'Meal generation failed');
+      
+      if (!resp.ok) {
+        // Handle usage limit specifically
+        if (resp.status === 403 && data?.error === 'LIMIT_REACHED') {
+          const errorMsg = `${data.message}\n\nUsage: ${data.used}/${data.limit} meals this month\nResets: ${new Date(data.nextResetAt).toLocaleDateString()}`;
+          setError(errorMsg);
+          setShowUpgradeModal(true);
+          throw new Error(errorMsg);
+        }
+        throw new Error(data?.error || 'Meal generation failed');
+      }
 
       // Ensure each meal has a unique ID
       const mealsWithIds = (data?.meals || []).map((meal: any, idx: number) => ({
@@ -739,7 +749,17 @@ export function ResultsPage() {
       });
 
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || 'Failed to regenerate meal');
+      
+      if (!resp.ok) {
+        // Handle usage limit specifically
+        if (resp.status === 403 && data?.error === 'LIMIT_REACHED') {
+          const errorMsg = `${data.message}\n\nUsage: ${data.used}/${data.limit} meals this month\nResets: ${new Date(data.nextResetAt).toLocaleDateString()}`;
+          setError(errorMsg);
+          setShowUpgradeModal(true);
+          throw new Error(errorMsg);
+        }
+        throw new Error(data?.error || 'Failed to regenerate meal');
+      }
 
       if (Array.isArray(data?.meals) && data.meals.length > 0) {
         const oldMealName = meals[mealIndex]?.name || 'unknown';
