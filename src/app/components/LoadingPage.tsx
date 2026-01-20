@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/useAuth';
 import { getOrCreateUserEntitlements, incrementMealGenerations } from '../../lib/firestoreUsers';
 import { canGenerateMeal, needsReset, getRemainingGenerations } from '../../lib/entitlements';
 import { UpgradeModal } from './UpgradeModal';
-import { getCurrentInventory } from '../../lib/inventory';
+import { getInventoryItems } from '../../lib/inventory';
 
 const tips = [
   'Tip: Clearer photos improve ingredient detection accuracy',
@@ -76,9 +76,9 @@ export function LoadingPage() {
         if (ingredients.length === 0 && user) {
           try {
             console.log('📦 No ingredients provided, checking saved inventory...');
-            const inventory = await getCurrentInventory(user.uid);
-            if (inventory && inventory.items.length > 0) {
-              ingredients = inventory.items.map(item => item.name).filter(Boolean);
+            const items = await getInventoryItems(user.uid);
+            if (items.length > 0) {
+              ingredients = items.map(item => item.name).filter(Boolean);
               console.log(`✅ Loaded ${ingredients.length} ingredients from saved inventory`);
             }
           } catch (error) {

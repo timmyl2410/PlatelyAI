@@ -2,18 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QrCode, Upload, Check, Loader2, Camera, X, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { createSession, getSession, subscribeToSession, uploadImage } from '../../lib/firebase';
+import { createSession, subscribeToSession, uploadImage } from '../../lib/firebase';
 import { useAuth } from '../../lib/useAuth';
 
 const frontendUrl = window.location.origin; // Will be https://myplately.com in production
 
 type UploadStatus = 'idle' | 'waiting' | 'received' | 'complete';
-
-type SessionData = {
-  id: string;
-  createdAt: any;
-  images: Array<{ url: string; uploadedAt: any }>;
-};
 
 export function UploadPage() {
   const navigate = useNavigate();
@@ -142,35 +136,6 @@ export function UploadPage() {
       console.error('❌ Failed to create session:', error);
       alert(`Failed to generate QR code: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  };
-
-  // =========================================================================
-  // FUNCTION: Poll Firebase for new uploads
-  // =========================================================================
-  const _startPolling = async (sessionId: string, type: 'fridge' | 'pantry') => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const session = (await getSession(sessionId)) as SessionData | null;
-        if (!session) return;
-
-        if (type === 'fridge') {
-          setFridgeUploadedImages(session.images || []);
-          if (session.images && session.images.length > 0) {
-            setFridgeStatus('complete');
-          }
-        } else {
-          setPantryUploadedImages(session.images || []);
-          if (session.images && session.images.length > 0) {
-            setPantryStatus('complete');
-          }
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-      }
-    }, 2000); // Poll every 2 seconds
-
-    // Store interval ID for cleanup (you'd need to store this in state)
-    return pollInterval;
   };
 
   const handleFileUpload = async (type: 'fridge' | 'pantry', e: React.ChangeEvent<HTMLInputElement>) => {

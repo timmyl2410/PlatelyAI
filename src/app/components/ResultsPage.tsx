@@ -404,7 +404,12 @@ export function ResultsPage() {
     }
     
     if (Array.isArray(mealsFromState) && mealsFromState.length > 0) {
-      setMeals(mealsFromState);
+      // Ensure each meal has a unique ID
+      const mealsWithIds = mealsFromState.map((meal, idx) => ({
+        ...meal,
+        id: meal.id || `${meal.name}-${Date.now()}-${idx}`
+      }));
+      setMeals(mealsWithIds);
       setMealImageUrls({});
       setMealImageLoading({});
       return;
@@ -414,7 +419,12 @@ export function ResultsPage() {
       const raw = sessionStorage.getItem('plately:lastMeals');
       const parsed = raw ? JSON.parse(raw) : null;
       if (Array.isArray(parsed)) {
-        setMeals(parsed as Meal[]);
+        // Ensure each meal has a unique ID
+        const mealsWithIds = parsed.map((meal: any, idx: number) => ({
+          ...meal,
+          id: meal.id || `${meal.name}-${Date.now()}-${idx}`
+        }));
+        setMeals(mealsWithIds);
         setMealImageUrls({});
         setMealImageLoading({});
       }
@@ -595,11 +605,17 @@ export function ResultsPage() {
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || 'Meal generation failed');
 
-      setMeals(data?.meals || []);
+      // Ensure each meal has a unique ID
+      const mealsWithIds = (data?.meals || []).map((meal: any, idx: number) => ({
+        ...meal,
+        id: meal.id || `${meal.name}-${Date.now()}-${idx}`
+      }));
+      
+      setMeals(mealsWithIds);
       setMealImageUrls({});
       setMealImageLoading({});
       try {
-        sessionStorage.setItem('plately:lastMeals', JSON.stringify(data?.meals || []));
+        sessionStorage.setItem('plately:lastMeals', JSON.stringify(mealsWithIds));
       } catch {
         // ignore
       }
@@ -704,10 +720,26 @@ export function ResultsPage() {
       if (!resp.ok) throw new Error(data?.error || 'Failed to regenerate meal');
 
       if (Array.isArray(data?.meals) && data.meals.length > 0) {
-        // Replace the specific meal
-        const newMeals = [...meals];
-        newMeals[mealIndex] = data.meals[0];
-        setMeals(newMeals);
+        // Add a unique regeneration ID to force React re-render
+        const regeneratedMeal = {
+          ...data.meals[0],
+          id: `${data.meals[0].id || data.meals[0].name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        };
+        
+        // Replace the specific meal with immutable update
+        setMeals(prevMeals => {
+          const newMeals = [...prevMeals];
+          newMeals[mealIndex] = regeneratedMeal;
+          
+          // Update sessionStorage
+          try {
+            sessionStorage.setItem('plately:lastMeals', JSON.stringify(newMeals));
+          } catch {
+            // ignore storage errors
+          }
+          
+          return newMeals;
+        });
 
         // Clear the image for this meal so it regenerates
         setMealImageUrls(prev => {
@@ -715,9 +747,13 @@ export function ResultsPage() {
           delete updated[mealKey];
           return updated;
         });
-
-        // Update sessionStorage
-        sessionStorage.setItem('plately:lastMeals', JSON.stringify(newMeals));
+        
+        // Clear loading state for this meal too
+        setMealImageLoading(prev => {
+          const updated = { ...prev };
+          delete updated[mealKey];
+          return updated;
+        });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to regenerate meal');
@@ -922,7 +958,7 @@ export function ResultsPage() {
 
             return (
               <div
-                key={mealKey}
+                key={meal.id || mealKey}
                 className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all group"
               >
                 {/* Image Placeholder */}

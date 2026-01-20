@@ -21,11 +21,11 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware - CORS with explicit origins for mobile app
 app.use(cors({
-  origin: ['http://localhost:8081', 'http://localhost:3000', 'https://platelyai.com', 'https://www.platelyai.com', 'https://myplately.com', 'https://www.myplately.com'],
+  origin: ['http://localhost:8081', 'http://localhost:8082', 'http://localhost:3000', 'https://platelyai.com', 'https://www.platelyai.com', 'https://myplately.com', 'https://www.myplately.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  exposedHeaders: ['Content-Length', 'X-Request-Id'],
+  exposedHeaders: ['Content-Length', 'X-Request-ID'],
   maxAge: 86400, // Cache preflight for 24 hours
 }));
 

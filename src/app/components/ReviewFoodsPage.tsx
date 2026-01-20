@@ -321,16 +321,10 @@ export function ReviewFoodsPage() {
       const inventoryItems = foods.map(food => ({
         name: food.name,
         category: food.category,
-        source: (food.source === 'ai' || food.source === 'keyword') ? 'scan' as const : 'user' as const,
-        confidence: food.confidence || 'medium',
-        quantity: null,
-        unit: null,
-        expiresAt: null,
+        confidence: food.confidence,
       }));
       
-      const firstImageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : undefined;
-      
-      await addItemsFromScan(user.uid, inventoryItems, firstImageUrl);
+      await addItemsFromScan(user.uid, inventoryItems);
       setInventorySaved(true);
       console.log('✅ Inventory saved successfully');
     } catch (error) {

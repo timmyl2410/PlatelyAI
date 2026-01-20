@@ -6,6 +6,12 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# API redirects - must come BEFORE the SPA catchall
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 # SPA redirect - ensures client-side routing works
 [[redirects]]
   from = "/*"

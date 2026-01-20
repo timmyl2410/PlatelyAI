@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Camera, Sparkles, FileText, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/useAuth';
-import { getCurrentInventory } from '../../lib/inventory';
+import { getInventoryItems } from '../../lib/inventory';
 
 export function HomePage() {
   const [hasSavedMeals, setHasSavedMeals] = useState(false);
@@ -26,8 +26,8 @@ export function HomePage() {
 
     const checkInventory = async () => {
       try {
-        const inventory = await getCurrentInventory(user.uid);
-        setHasInventory(inventory !== null && inventory.items.length > 0);
+        const items = await getInventoryItems(user.uid);
+        setHasInventory(items.length > 0);
       } catch {
         setHasInventory(false);
       }
