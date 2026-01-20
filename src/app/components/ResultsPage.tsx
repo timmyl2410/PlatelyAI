@@ -713,6 +713,7 @@ export function ResultsPage() {
           goal,
           filters: filtersArray,
           count: 1, // Only generate 1 meal for single regeneration
+          timestamp: Date.now(), // Cache busting
         }),
       });
 
@@ -720,6 +721,12 @@ export function ResultsPage() {
       if (!resp.ok) throw new Error(data?.error || 'Failed to regenerate meal');
 
       if (Array.isArray(data?.meals) && data.meals.length > 0) {
+        console.log(`🔄 Regenerating meal at index ${mealIndex}:`, {
+          oldMeal: meals[mealIndex]?.name,
+          newMeal: data.meals[0]?.name,
+          mealIndex
+        });
+        
         // Add a unique regeneration ID to force React re-render
         const regeneratedMeal = {
           ...data.meals[0],
@@ -728,8 +735,10 @@ export function ResultsPage() {
         
         // Replace the specific meal with immutable update
         setMeals(prevMeals => {
+          console.log('📋 Before update:', prevMeals.map(m => m.name));
           const newMeals = [...prevMeals];
           newMeals[mealIndex] = regeneratedMeal;
+          console.log('📋 After update:', newMeals.map(m => m.name));
           
           // Update sessionStorage
           try {
@@ -955,6 +964,15 @@ export function ResultsPage() {
           {meals.map((meal, index) => {
             const mealKey = String(index);
             const imageUrl = mealImageUrls[mealKey];
+            
+            // Debug logging
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Rendering meal ${index}:`, {
+                id: meal.id,
+                name: meal.name,
+                key: meal.id || mealKey
+              });
+            }
 
             return (
               <div
