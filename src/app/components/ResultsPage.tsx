@@ -721,6 +721,11 @@ export function ResultsPage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Get current meal names to exclude from regeneration
+      const currentMealNames = meals.map(m => m.name).filter(Boolean);
+      
+      console.log(`[API CALL] Regenerating meal ${mealIndex}, excluding:`, currentMealNames);
+
       const resp = await fetch(`${backendUrl}/api/meals`, {
         method: 'POST',
         headers,
@@ -729,7 +734,7 @@ export function ResultsPage() {
           goal,
           filters: filtersArray,
           count: 1, // Only generate 1 meal for single regeneration
-          timestamp: Date.now(), // Cache busting
+          excludeMealNames: currentMealNames, // Tell backend to avoid these
         }),
       });
 

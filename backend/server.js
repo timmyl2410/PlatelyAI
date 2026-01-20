@@ -449,13 +449,14 @@ No explanations. No extra text. One-word response only.`;
 // ============================================================================
 app.post('/api/meals', async (req, res) => {
   try {
-    const { ingredients, goal, filters, count } = req.body;
+    const { ingredients, goal, filters, count, excludeMealNames } = req.body;
 
     console.log('🍽️  /api/meals called');
     console.log('   ingredients:', Array.isArray(ingredients) ? ingredients.length : 'not-an-array');
     console.log('   goal:', goal);
     console.log('   filters:', Array.isArray(filters) ? filters : 'none');
     console.log('   count:', count);
+    console.log('   excludeMealNames:', Array.isArray(excludeMealNames) ? excludeMealNames : 'none');
 
     if (!Array.isArray(ingredients) || ingredients.length === 0) {
       return res.status(400).json({ error: 'Missing ingredients (array of strings)' });
@@ -563,15 +564,22 @@ app.post('/api/meals', async (req, res) => {
     const normalizedGoal = typeof goal === 'string' ? goal : 'maintain';
     const normalizedFilters = Array.isArray(filters) ? filters.filter((f) => typeof f === 'string') : [];
     const mealsToGenerate = typeof count === 'number' && count >= 1 ? Math.min(count, 5) : 5;
+    const excludeList = Array.isArray(excludeMealNames) ? excludeMealNames.filter(n => typeof n === 'string' && n.trim()).map(n => n.trim()) : [];
 
     const systemPrompt =
       'You are a nutrition-aware meal planner. You generate realistic, well-known meals based on available ingredients. Only suggest real recipes that exist in cookbooks or are commonly made. You must return ONLY valid JSON.';
+
+    let exclusionText = '';
+    if (excludeList.length > 0) {
+      exclusionText = `\n\n⚠️ IMPORTANT: Do NOT suggest any of these meals (user has already seen them):\n${excludeList.map(n => `- ${n}`).join('\n')}\n\nYou MUST suggest completely different meals with different names.`;
+    }
 
     const userPrompt =
       'Given these available ingredients:\n' +
       ingredients.map((x) => `- ${x}`).join('\n') +
       `\n\nUser goal: ${normalizedGoal}` +
       `\nDietary filters: ${normalizedFilters.length ? normalizedFilters.join(', ') : 'none'}` +
+      exclusionText +
       '\n\nReturn ONLY JSON with this exact shape:' +
       '\n{' +
       '"meals": [' +
@@ -586,6 +594,11 @@ app.post('/api/meals', async (req, res) => {
       '\n- Keep prepTime like "25 min".' +
       '\n- No markdown, no extra keys.';
 
+    // Increase temperature for single meal regeneration to get more variety
+    const temperature = count === 1 ? 0.9 : 0.3;
+    
+    console.log('   temperature:', temperature, '(higher for single meal regen)');
+
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -594,7 +607,7 @@ app.post('/api/meals', async (req, res) => {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.3,
+        temperature,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
