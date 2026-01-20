@@ -340,6 +340,22 @@ export function ResultsPage() {
   const { user } = useAuth();
 
   const filtersArray = useMemo(() => Array.from(filters), [filters]);
+  
+  // Force-generate IDs for meals that don't have them (fixes old sessionStorage data)
+  useEffect(() => {
+    setMeals(prevMeals => {
+      const needsUpdate = prevMeals.some(meal => !meal.id);
+      if (!needsUpdate) return prevMeals;
+      
+      console.log('[FIX] Generating missing IDs for meals');
+      const updated = prevMeals.map((meal, idx) => ({
+        ...meal,
+        id: meal.id || `${meal.name}-init-${Date.now()}-${idx}`
+      }));
+      sessionStorage.setItem('plately:lastMeals', JSON.stringify(updated));
+      return updated;
+    });
+  }, [meals.length]);
 
   // Load entitlements
   useEffect(() => {
@@ -721,24 +737,25 @@ export function ResultsPage() {
       if (!resp.ok) throw new Error(data?.error || 'Failed to regenerate meal');
 
       if (Array.isArray(data?.meals) && data.meals.length > 0) {
-        console.log(`🔄 Regenerating meal at index ${mealIndex}:`, {
-          oldMeal: meals[mealIndex]?.name,
-          newMeal: data.meals[0]?.name,
-          mealIndex
-        });
+        const oldMealName = meals[mealIndex]?.name || 'unknown';
+        const newMealName = data.meals[0]?.name || 'unknown';
+        
+        console.log(`[REGENERATE] Index ${mealIndex}: ${oldMealName} → ${newMealName}`);
         
         // Add a unique regeneration ID to force React re-render
         const regeneratedMeal = {
           ...data.meals[0],
-          id: `${data.meals[0].id || data.meals[0].name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          id: `${data.meals[0].name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         };
+        
+        console.log('[REGENERATE] New meal ID:', regeneratedMeal.id);
         
         // Replace the specific meal with immutable update
         setMeals(prevMeals => {
-          console.log('📋 Before update:', prevMeals.map(m => m.name));
+          console.log('[BEFORE]:', prevMeals.map((m, i) => `${i}: ${m.name} (${m.id})`));
           const newMeals = [...prevMeals];
           newMeals[mealIndex] = regeneratedMeal;
-          console.log('📋 After update:', newMeals.map(m => m.name));
+          console.log('[AFTER]:', newMeals.map((m, i) => `${i}: ${m.name} (${m.id})`));
           
           // Update sessionStorage
           try {
@@ -965,14 +982,8 @@ export function ResultsPage() {
             const mealKey = String(index);
             const imageUrl = mealImageUrls[mealKey];
             
-            // Debug logging
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`Rendering meal ${index}:`, {
-                id: meal.id,
-                name: meal.name,
-                key: meal.id || mealKey
-              });
-            }
+            // ALWAYS log for debugging
+            console.log(`[RENDER] Meal ${index}:`, meal.name, 'ID:', meal.id);
 
             return (
               <div
