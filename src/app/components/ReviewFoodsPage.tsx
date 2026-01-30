@@ -318,15 +318,14 @@ export function ReviewFoodsPage() {
 
   const updateFoodCategory = (foodId: string, newCategory: string) => {
     setFoods((prevFoods) =>
-      prevFoods.map((f) =>UpsertInventoryItemInput
-      const inventoryItems: UpsertInventoryItemInput[] = foods.map(food => ({
-        name: food.name,
-        category: food.category,
-        confidence: food.confidence === 'high' ? 1.0 : food.confidence === 'medium' ? 0.7 : 0.4,
-        source: (food.source === 'ai' ? 'ai' : 'manual') as 'ai' | 'manual',
-      }));
-      
-      await upsertInventoryItemsigh',
+      prevFoods.map((f) =>
+        f.id === foodId
+          ? {
+              ...f,
+              category: newCategory,
+              needsConfirmation: false,
+              source: 'user',
+              confidence: 'high',
             }
           : f
       )
