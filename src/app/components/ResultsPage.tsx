@@ -727,7 +727,8 @@ export function ResultsPage() {
     await generateMore();
   };
 
-  const handleRegenerateMeal = async (mealIndex: number) => {
+  const handleRegenerateMeal = async (mealIndex: number, retryCount = 0) => {
+    const MAX_RETRIES = 3;
     const mealKey = String(mealIndex);
     setRegeneratingMeal(mealKey);
     setError(null);
@@ -756,7 +757,7 @@ export function ResultsPage() {
       // Get current meal names to exclude from regeneration
       const currentMealNames = meals.map(m => m.name).filter(Boolean);
       
-      console.log(`[API CALL] Regenerating meal ${mealIndex}, excluding:`, currentMealNames);
+      console.log(`[API CALL] Regenerating meal ${mealIndex} (attempt ${retryCount + 1}/${MAX_RETRIES}), excluding:`, currentMealNames);
 
       const resp = await fetch(`${backendUrl}/api/meals`, {
         method: 'POST',
@@ -784,8 +785,26 @@ export function ResultsPage() {
       }
 
       if (Array.isArray(data?.meals) && data.meals.length > 0) {
-        const oldMealName = meals[mealIndex]?.name || 'unknown';
-        const newMealName = data.meals[0]?.name || 'unknown';
+        const newMealName = data.meals[0]?.name || '';
+        const oldMealName = meals[mealIndex]?.name || '';
+        
+        // Check for duplicate - if new meal name matches ANY existing meal name, retry
+        const isDuplicate = currentMealNames.some(existingName => 
+          existingName.toLowerCase().trim() === newMealName.toLowerCase().trim()
+        );
+        
+        if (isDuplicate && retryCount < MAX_RETRIES - 1) {
+          console.log(`[REGENERATE] Duplicate detected: "${newMealName}". Retrying...`);
+          // Retry regeneration
+          setRegeneratingMeal(null); // Clear state briefly
+          setTimeout(() => handleRegenerateMeal(mealIndex, retryCount + 1), 500);
+          return;
+        }
+        
+        if (isDuplicate) {
+          console.warn(`[REGENERATE] Still got duplicate after ${MAX_RETRIES} attempts: "${newMealName}"`);
+          throw new Error('Unable to generate a unique meal. Please try again.');
+        }
         
         console.log(`[REGENERATE] Index ${mealIndex}: ${oldMealName} → ${newMealName}`);
         
@@ -797,12 +816,12 @@ export function ResultsPage() {
         
         console.log('[REGENERATE] New meal ID:', regeneratedMeal.id);
         
-        // Replace the specific meal with immutable update
+        // Replace the specific meal at the exact index
         setMeals(prevMeals => {
-          console.log('[BEFORE]:', prevMeals.map((m, i) => `${i}: ${m.name} (${m.id})`));
           const newMeals = [...prevMeals];
           newMeals[mealIndex] = regeneratedMeal;
-          console.log('[AFTER]:', newMeals.map((m, i) => `${i}: ${m.name} (${m.id})`));
+          
+          console.log(`[REGENERATE] Updated meal at index ${mealIndex}`);
           
           // Update sessionStorage
           try {

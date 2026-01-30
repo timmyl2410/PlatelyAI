@@ -47,7 +47,7 @@ export const TIER_LIMITS = {
 
 export const TIER_PRICES = {
   free: 0,
-  premium: 9.99,
+  premium: 4.99,
   pro: null, // Coming soon
 };
 

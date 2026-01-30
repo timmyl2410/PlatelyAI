@@ -95,7 +95,7 @@ export function FAQPage() {
         },
         {
           question: 'What do I get with Premium?',
-          answer: 'Premium ($9.99/month) includes 150 meal generations, saved inventory, priority support, and advanced filters. Ideal for regular users and fitness enthusiasts.',
+          answer: 'Premium ($4.99/month) includes 150 meal generations, saved inventory, priority support, and advanced filters. Ideal for regular users and fitness enthusiasts.',
         },
         {
           question: 'Can I cancel anytime?',
