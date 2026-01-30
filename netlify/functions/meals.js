@@ -166,6 +166,8 @@ export async function handler(event, context) {
       '\n}' +
       '\n\nGenerate exactly 10 meals following the meal mix structure. Be friendly, confident, practical, slightly premium but never pretentious.';
 
+    console.log('🤖 Requesting 10 meals from OpenAI with max_tokens: 4000');
+
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -185,6 +187,8 @@ export async function handler(event, context) {
 
     const data = await resp.json();
     console.log('   OpenAI status:', resp.status);
+    console.log('   Response finish_reason:', data?.choices?.[0]?.finish_reason);
+    console.log('   Usage tokens:', data?.usage?.completion_tokens, '/', data?.usage?.total_tokens);
     
     if (!resp.ok) {
       console.error('❌ OpenAI error:', data);
@@ -199,7 +203,8 @@ export async function handler(event, context) {
       return errorResponse('Model returned unexpected output', 502, { raw: text });
     }
     
-    console.log('   meals returned by OpenAI:', meals.length);
+    console.log('   ⚠️ MEALS RETURNED BY OPENAI:', meals.length);
+    console.log('   Meal names:', meals.map(m => m.name));
 
     const sanitized = meals
       .filter((m) => m && typeof m.name === 'string')
