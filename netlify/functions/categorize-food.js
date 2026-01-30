@@ -24,8 +24,11 @@ export async function handler(event, context) {
     const model = process.env.OPENAI_TEXT_MODEL || OPENAI_MODEL;
 
     if (!apiKey) {
+      console.error('❌ OPENAI_API_KEY not set in Netlify environment');
       return errorResponse('OPENAI_API_KEY not set', 500, 'Add OPENAI_API_KEY to Netlify environment variables');
     }
+
+    console.log('   ✅ OpenAI key detected (length:', apiKey.length, ')');
 
     const systemPrompt = 'You are categorizing food items for a food-tracking app. You must be accurate and logical.';
     

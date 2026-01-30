@@ -44,8 +44,18 @@ export async function handler(event, context) {
     console.log('   apiKey set:', Boolean(apiKey));
 
     if (!apiKey) {
-      return errorResponse('OPENAI_API_KEY not set', 500, 'Add OPENAI_API_KEY to Netlify environment variables');
+      console.error('❌ OPENAI_API_KEY not set in Netlify environment');
+      console.error('   To fix: Add OPENAI_API_KEY in Netlify Dashboard > Site settings > Environment variables');
+      console.error('   Current env vars:', Object.keys(process.env).filter(k => k.includes('OPENAI')));
+      return errorResponse(
+        'OPENAI_API_KEY not set', 
+        500, 
+        'Add OPENAI_API_KEY to Netlify environment variables in your dashboard'
+      );
     }
+
+    // Log success (without exposing the key)
+    console.log('   ✅ OpenAI key detected (length:', apiKey.length, ')');
 
     const systemPrompt =
       'You are a food-ingredient detector. Given one or more photos of a fridge and/or pantry, return the best-effort list of distinct food items.';
