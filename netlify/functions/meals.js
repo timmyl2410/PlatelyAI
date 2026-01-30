@@ -175,6 +175,7 @@ export async function handler(event, context) {
       body: JSON.stringify({
         model,
         temperature: 0.7,
+        max_tokens: 4000, // Ensure enough space for 10 complete meals
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
