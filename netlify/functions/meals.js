@@ -174,7 +174,7 @@ export async function handler(event, context) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.3,
+        temperature: 0.7,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -197,6 +197,8 @@ export async function handler(event, context) {
     if (!meals) {
       return errorResponse('Model returned unexpected output', 502, { raw: text });
     }
+    
+    console.log('   meals returned by OpenAI:', meals.length);
 
     const sanitized = meals
       .filter((m) => m && typeof m.name === 'string')

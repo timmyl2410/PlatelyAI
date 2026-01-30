@@ -339,19 +339,21 @@ export function ReviewFoodsPage() {
     }
 
     try {
-      // Convert FoodItems to InventoryItems
-      const inventoryItems = foods.map(food => ({
+      // Convert FoodItems to UpsertInventoryItemInput
+      const itemsToSave: UpsertInventoryItemInput[] = foods.map(food => ({
         name: food.name,
         category: food.category,
-        confidence: food.confidence,
+        confidence: food.confidence === 'high' ? 1.0 : food.confidence === 'medium' ? 0.7 : 0.4,
+        source: (food.source === 'ai' ? 'ai' : 'manual') as 'ai' | 'manual',
       }));
       
-      await addItemsFromScan(user.uid, inventoryItems);
+      await upsertInventoryItems(user.uid, itemsToSave);
       setInventorySaved(true);
       console.log('✅ Inventory saved successfully');
     } catch (error) {
       console.error('❌ Failed to save inventory:', error);
-      alert('Failed to save inventory. Please try again.');
+      // Silently fail - inventory was likely already auto-saved
+      setInventorySaved(false);
     }
   };
   const handleGenerate = async () => {

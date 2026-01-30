@@ -262,7 +262,7 @@ export function LoadingPage() {
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md">
             <div className="text-2xl mb-1" style={{ fontWeight: 700, color: '#2ECC71' }}>
-              5
+              10
             </div>
             <div className="text-xs text-gray-600">Meal ideas</div>
           </div>
