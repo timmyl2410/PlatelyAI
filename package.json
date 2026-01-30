@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "pnpm build:shared && vite build",
+    "build:shared": "cd packages/shared && pnpm build",
     "dev": "vite",
     "dev:web": "vite",
     "dev:backend": "cd backend && pnpm dev",
