@@ -339,11 +339,40 @@ app.post('/api/scan', verifyFirebaseToken, async (req, res) => {
       'Return ONLY valid JSON with this exact shape: {"foods": [{"name": string, "category": "Proteins"|"Vegetables"|"Dairy"|"Pantry"|"Other"}] }\n' +
       'Rules: (1) Deduplicate similar items. (2) Prefer specific names (e.g., "chicken breast" not "meat"). (3) If unsure, put category "Other". (4) No extra keys, no markdown.';
 
+    // Download images from Firebase and convert to base64
+    // This solves CORS issues with OpenAI downloading directly from Firebase Storage
+    console.log('   📥 Downloading images from Firebase Storage...');
+    const imageContents = await Promise.all(
+      imageUrls.map(async (url, index) => {
+        try {
+          console.log(`   Downloading image ${index + 1}/${imageUrls.length}...`);
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Failed to download image: ${response.statusText}`);
+          }
+          const buffer = await response.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          const contentType = response.headers.get('content-type') || 'image/jpeg';
+          console.log(`   ✅ Image ${index + 1} downloaded (${contentType})`);
+          return {
+            type: 'image_url',
+            image_url: {
+              url: `data:${contentType};base64,${base64}`
+            }
+          };
+        } catch (error) {
+          console.error(`   ❌ Failed to download image ${index + 1}:`, error);
+          throw error;
+        }
+      })
+    );
+
     const content = [
       { type: 'text', text: userText },
-      ...imageUrls.map((url) => ({ type: 'image_url', image_url: { url } })),
+      ...imageContents,
     ];
 
+    console.log('   🧠 Sending to OpenAI with base64 images...');
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
