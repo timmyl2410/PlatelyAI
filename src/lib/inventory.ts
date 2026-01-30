@@ -215,61 +215,60 @@ export const deleteInventoryItem = async (uid: string, itemId: string): Promise<
 };
 
 // ============================================================================
-// BATCH ADD ITEMS FROM SCAN
+// CANONICAL UPSERT FUNCTION - Web platform adapter
+// Uses shared cross-platform logic from @plately/shared
+// ============================================================================
+
+import { upsertInventoryItems as sharedUpsert, type UpsertInventoryItemInput } from '@plately/shared';
+
+export const upsertInventoryItems = async (
+  uid: string,
+  items: UpsertInventoryItemInput[]
+): Promise<void> => {
+  await ensureInventoryDocExists(uid);
+  
+  const adapter = {
+    getExistingItems: async (userId: string) => {
+      return await getInventoryItems(userId);
+    },
+    updateItem: async (userId: string, itemId: string, data: any) => {
+      const itemRef = doc(db, 'inventories', userId, 'items', itemId);
+      await updateDoc(itemRef, data);
+    },
+    createItem: async (userId: string, data: any) => {
+      const itemsRef = collection(db, 'inventories', userId, 'items');
+      const newItemRef = doc(itemsRef);
+      await setDoc(newItemRef, data);
+    },
+    updateParentDoc: async (userId: string, data: any) => {
+      const inventoryRef = doc(db, 'inventories', userId);
+      await updateDoc(inventoryRef, data);
+    },
+    serverTimestamp: () => serverTimestamp(),
+  };
+  
+  await sharedUpsert(adapter, uid, items, 'scan');
+};
+
+// ============================================================================
+// BATCH ADD ITEMS FROM SCAN (DEPRECATED - use upsertInventoryItems instead)
 // ============================================================================
 
 export const addItemsFromScan = async (
   uid: string,
   items: Array<{ name: string; category?: string; confidence?: number }>
 ): Promise<void> => {
-  try {
-    console.log('📦 Adding items from scan for user:', uid, items.length);
-    
-    // Ensure parent doc exists
-    await ensureInventoryDocExists(uid);
-    
-    const batch = writeBatch(db);
-    const itemsRef = collection(db, 'inventories', uid, 'items');
-    
-    // Get existing items to avoid duplicates
-    const existingItems = await getInventoryItems(uid);
-    const existingNames = new Set(
-      existingItems.map(item => normalizeIngredientName(item.name))
-    );
-    
-    let addedCount = 0;
-    items.forEach((item) => {
-      const normalized = normalizeIngredientName(item.name);
-      if (!existingNames.has(normalized)) {
-        const newItemRef = doc(itemsRef);
-        batch.set(newItemRef, {
-          name: toTitleCase(item.name),
-          category: item.category,
-          confidence: item.confidence,
-          source: 'ai',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        existingNames.add(normalized);
-        addedCount++;
-      }
-    });
-    
-    // Update parent doc
-    const inventoryRef = doc(db, 'inventories', uid);
-    batch.update(inventoryRef, {
-      itemsCount: existingItems.length + addedCount,
-      lastScannedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      source: 'scan',
-    });
-    
-    await batch.commit();
-    console.log(`✅ Added ${addedCount} new items from scan`);
-  } catch (error) {
-    console.error('❌ Error adding items from scan:', error);
-    throw error;
-  }
+  console.warn('⚠️ addItemsFromScan is deprecated. Use upsertInventoryItems() instead.');
+  
+  // Convert to new format and call upsert
+  const upsertItems: UpsertInventoryItemInput[] = items.map(item => ({
+    name: item.name,
+    category: item.category,
+    confidence: item.confidence,
+    source: 'ai' as const,
+  }));
+  
+  await upsertInventoryItems(uid, upsertItems);
 };
 
 // ============================================================================

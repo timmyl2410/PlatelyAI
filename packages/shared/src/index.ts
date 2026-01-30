@@ -44,3 +44,12 @@ export type {
 } from './models/user.js';
 
 export { TIER_LIMITS } from './models/user.js';
+
+// Inventory sync functions (shared cross-platform logic)
+export { 
+  upsertInventoryItems, 
+  normalizeItemName, 
+  toTitleCase,
+  type UpsertInventoryItemInput,
+  type InventoryUpsertResult 
+} from './lib/inventorySync.js';

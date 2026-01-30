@@ -4,7 +4,8 @@ import { X, Plus, SlidersHorizontal, HelpCircle, Check } from 'lucide-react';
 import { getSession } from '../../lib/firebase';
 import { CORE_CATEGORIES, categorizeFood } from '../../utils/foodCategorization';
 import { useAuth } from '../../lib/useAuth';
-import { addItemsFromScan } from '../../lib/inventory';
+import { upsertInventoryItems } from '../../lib/inventory';
+import type { UpsertInventoryItemInput } from '@plately/shared';
 
 type FoodItem = {
   id: string;
@@ -221,6 +222,27 @@ export function ReviewFoodsPage() {
           setScanProgress(100);
           setFoods(categorizedFoods);
           setLoading(false);
+          
+          // AUTO-SAVE TO INVENTORY (no user action required)
+          if (user && categorizedFoods.length > 0) {
+            (async () => {
+              try {
+                console.log('💾 Auto-saving inventory...');
+                const itemsToSave: UpsertInventoryItemInput[] = categorizedFoods.map(f => ({
+                  name: f.name,
+                  category: f.category,
+                  confidence: f.confidence === 'high' ? 1.0 : f.confidence === 'medium' ? 0.7 : 0.4,
+                  source: (f.source === 'ai' ? 'ai' : 'manual') as 'ai' | 'manual',
+                }));
+                
+                await upsertInventoryItems(user.uid, itemsToSave);
+                setInventorySaved(true);
+                console.log('✅ Inventory auto-saved');
+              } catch (err) {
+                console.error('Failed to auto-save inventory:', err);
+              }
+            })();
+          }
         }
       } catch (e) {
         if (!cancelled) {
@@ -296,14 +318,15 @@ export function ReviewFoodsPage() {
 
   const updateFoodCategory = (foodId: string, newCategory: string) => {
     setFoods((prevFoods) =>
-      prevFoods.map((f) =>
-        f.id === foodId
-          ? {
-              ...f,
-              category: newCategory,
-              needsConfirmation: false,
-              source: 'user',
-              confidence: 'high',
+      prevFoods.map((f) =>UpsertInventoryItemInput
+      const inventoryItems: UpsertInventoryItemInput[] = foods.map(food => ({
+        name: food.name,
+        category: food.category,
+        confidence: food.confidence === 'high' ? 1.0 : food.confidence === 'medium' ? 0.7 : 0.4,
+        source: (food.source === 'ai' ? 'ai' : 'manual') as 'ai' | 'manual',
+      }));
+      
+      await upsertInventoryItemsigh',
             }
           : f
       )
