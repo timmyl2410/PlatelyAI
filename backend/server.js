@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import Stripe from 'stripe';
+import sharp from 'sharp';
 import { getBucket, getFirestore, getAuth, admin as firebaseAdmin } from './firebaseAdmin.js';
 import { computeRecipeImageId } from './recipeImageId.js';
 import uploadRoutes from './routes/uploadRoutes.js';
@@ -367,15 +368,30 @@ app.post('/api/scan', verifyFirebaseToken, async (req, res) => {
           
           // Get metadata to determine content type
           const [metadata] = await file.getMetadata();
-          const contentType = metadata.contentType || 'image/jpeg';
+          const originalContentType = metadata.contentType || 'image/jpeg';
+          console.log(`   Original format: ${originalContentType}, size: ${buffer.length} bytes`);
           
-          const base64 = buffer.toString('base64');
-          console.log(`   ✅ Image ${index + 1} downloaded (${contentType}, ${buffer.length} bytes)`);
+          // Convert to JPEG if HEIC or any unsupported format
+          // OpenAI only accepts: png, jpeg, gif, webp
+          let finalBuffer = buffer;
+          let finalContentType = originalContentType;
+          
+          if (originalContentType === 'image/heic' || originalContentType === 'image/heif') {
+            console.log(`   🔄 Converting HEIC to JPEG...`);
+            finalBuffer = await sharp(buffer)
+              .jpeg({ quality: 90 })
+              .toBuffer();
+            finalContentType = 'image/jpeg';
+            console.log(`   ✅ Converted to JPEG (${finalBuffer.length} bytes)`);
+          }
+          
+          const base64 = finalBuffer.toString('base64');
+          console.log(`   ✅ Image ${index + 1} ready for OpenAI (${finalContentType})`);
           
           return {
             type: 'image_url',
             image_url: {
-              url: `data:${contentType};base64,${base64}`
+              url: `data:${finalContentType};base64,${base64}`
             }
           };
         } catch (error) {
