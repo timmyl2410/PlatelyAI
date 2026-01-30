@@ -664,41 +664,71 @@ app.post('/api/meals', async (req, res) => {
 
     const normalizedGoal = typeof goal === 'string' ? goal : 'maintain';
     const normalizedFilters = Array.isArray(filters) ? filters.filter((f) => typeof f === 'string') : [];
-    const mealsToGenerate = typeof count === 'number' && count >= 1 ? Math.min(count, 5) : 5;
+    const mealsToGenerate = typeof count === 'number' && count >= 1 ? Math.min(count, 10) : 10;
     const excludeList = Array.isArray(excludeMealNames) ? excludeMealNames.filter(n => typeof n === 'string' && n.trim()).map(n => n.trim()) : [];
 
     const systemPrompt =
-      'You are a nutrition-aware meal planner. You generate realistic, well-known meals based on available ingredients. Only suggest real recipes that exist in cookbooks or are commonly made. You must return ONLY valid JSON.';
+      'You are a smart, practical meal-planning assistant. ' +
+      'Using ONLY the foods detected from the user\'s fridge scan plus common pantry staples ' +
+      '(salt, pepper, oil, butter, basic spices), generate distinct meal ideas. ' +
+      'Help the user realistically decide what to eat using what they already have.';
 
     let exclusionText = '';
     if (excludeList.length > 0) {
       exclusionText = `\n\n⚠️ IMPORTANT: Do NOT suggest any of these meals (user has already seen them):\n${excludeList.map(n => `- ${n}`).join('\n')}\n\nYou MUST suggest completely different meals with different names.`;
     }
 
+    // For default batch generation (10 meals), use structured mix
+    const isBatchGeneration = mealsToGenerate >= 5;
+    
+    let structureGuidance = '';
+    if (isBatchGeneration && mealsToGenerate === 10) {
+      structureGuidance = '\n\nMEAL MIX (STRICT):' +
+        '\n- 5 simple, familiar "safe" meals (easy, comforting, weeknight-friendly)' +
+        '\n- 3 creative but realistic "interesting" meals' +
+        '\n- 2 slightly elevated "stretch" meals that feel impressive but achievable';
+    }
+
     const userPrompt =
-      'Given these available ingredients:\n' +
+      'Available ingredients from fridge scan:\n' +
       ingredients.map((x) => `- ${x}`).join('\n') +
       `\n\nUser goal: ${normalizedGoal}` +
       `\nDietary filters: ${normalizedFilters.length ? normalizedFilters.join(', ') : 'none'}` +
       exclusionText +
-      '\n\nReturn ONLY JSON with this exact shape:' +
+      structureGuidance +
+      '\n\nRULES:' +
+      '\n- Each meal must clearly use at least one scanned ingredient' +
+      '\n- Do NOT invent exotic or specialty ingredients unless explicitly present' +
+      '\n- Do NOT repeat the same main protein more than twice' +
+      '\n- Avoid repeating cuisines or cooking styles' +
+      '\n- No meal should feel like a minor variation of another' +
+      '\n- Meal names should be short and clear (no emojis, no overly fancy wording)' +
+      '\n\nOUTPUT FORMAT (STRICT):' +
+      '\nReturn ONLY valid JSON with this exact structure:' +
       '\n{' +
-      '"meals": [' +
-      '{"id": string, "name": string, "description": string, "prepTime": string, "difficulty": "Easy"|"Medium"|"Hard", "healthScore": number, "calories": number, "protein": number, "carbs": number, "fat": number, "ingredients": string[]}' +
-      ']}' +
-      '\n\nRules:' +
-      `\n- Generate exactly ${mealsToGenerate} meal${mealsToGenerate > 1 ? 's' : ''}.` +
-      '\n- Only suggest real, well-known recipes that actually exist (e.g., "Chicken Stir-Fry", "Spaghetti Carbonara", "Greek Salad"). Do NOT invent creative fusion dishes or made-up meal names.' +
-      '\n- Meals should mostly use the provided ingredients; you may add up to 3 common pantry staples per meal (salt, pepper, oil, water, etc.).' +
-      '\n- calories/protein/carbs/fat should be plausible estimates (integers, in grams for macros).' +
-      '\n- healthScore must be an integer between 0-100 (where 100 is extremely healthy, 70-85 is moderately healthy, below 70 is less healthy).' +
-      '\n- Keep prepTime like "25 min".' +
-      '\n- No markdown, no extra keys.';
+      '\n  "meals": [' +
+      '\n    {' +
+      '\n      "id": string,' +
+      '\n      "name": string (short and clear),' +
+      '\n      "description": string (one concise sentence explaining the meal),' +
+      '\n      "prepTime": string (e.g., "25 min"),' +
+      '\n      "difficulty": "Easy"|"Medium"|"Hard",' +
+      '\n      "healthScore": number (0-100, integer),' +
+      '\n      "calories": number (integer),' +
+      '\n      "protein": number (grams, integer),' +
+      '\n      "carbs": number (grams, integer),' +
+      '\n      "fat": number (grams, integer),' +
+      '\n      "ingredients": string[] (key ingredients used from scan)' +
+      '\n    }' +
+      '\n  ]' +
+      '\n}' +
+      `\n\nGenerate exactly ${mealsToGenerate} meal${mealsToGenerate > 1 ? 's' : ''}${isBatchGeneration && mealsToGenerate === 10 ? ' following the meal mix structure' : ''}. Be friendly, confident, practical, slightly premium but never pretentious.`;
 
     // Increase temperature for single meal regeneration to get more variety
-    const temperature = count === 1 ? 0.9 : 0.3;
+    const temperature = count === 1 ? 0.9 : 0.7;
     
-    console.log('   temperature:', temperature, '(higher for single meal regen)');
+    console.log('   temperature:', temperature, '(higher for variety)');
+    console.log('   requesting', mealsToGenerate, 'meals from OpenAI');
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -709,6 +739,7 @@ app.post('/api/meals', async (req, res) => {
       body: JSON.stringify({
         model,
         temperature,
+        max_tokens: 4000, // Ensure enough space for 10 complete meals
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
