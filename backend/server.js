@@ -339,21 +339,39 @@ app.post('/api/scan', verifyFirebaseToken, async (req, res) => {
       'Return ONLY valid JSON with this exact shape: {"foods": [{"name": string, "category": "Proteins"|"Vegetables"|"Dairy"|"Pantry"|"Other"}] }\n' +
       'Rules: (1) Deduplicate similar items. (2) Prefer specific names (e.g., "chicken breast" not "meat"). (3) If unsure, put category "Other". (4) No extra keys, no markdown.';
 
-    // Download images from Firebase and convert to base64
+    // Download images from Firebase Storage using Admin SDK and convert to base64
     // This solves CORS issues with OpenAI downloading directly from Firebase Storage
     console.log('   📥 Downloading images from Firebase Storage...');
+    const bucket = getBucket();
+    
     const imageContents = await Promise.all(
       imageUrls.map(async (url, index) => {
         try {
-          console.log(`   Downloading image ${index + 1}/${imageUrls.length}...`);
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error(`Failed to download image: ${response.statusText}`);
+          console.log(`   Downloading image ${index + 1}/${imageUrls.length}: ${url}`);
+          
+          // Extract the storage path from Firebase Storage URL
+          // URL format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?alt=media&token={token}
+          const urlObj = new URL(url);
+          const pathMatch = urlObj.pathname.match(/\/o\/(.+)$/);
+          if (!pathMatch) {
+            throw new Error('Invalid Firebase Storage URL format');
           }
-          const buffer = await response.arrayBuffer();
-          const base64 = Buffer.from(buffer).toString('base64');
-          const contentType = response.headers.get('content-type') || 'image/jpeg';
-          console.log(`   ✅ Image ${index + 1} downloaded (${contentType})`);
+          
+          // Decode the URL-encoded path (e.g., "scan_123%2Fimage.jpg" -> "scan_123/image.jpg")
+          const filePath = decodeURIComponent(pathMatch[1]);
+          console.log(`   Storage path: ${filePath}`);
+          
+          // Download file using Firebase Admin SDK
+          const file = bucket.file(filePath);
+          const [buffer] = await file.download();
+          
+          // Get metadata to determine content type
+          const [metadata] = await file.getMetadata();
+          const contentType = metadata.contentType || 'image/jpeg';
+          
+          const base64 = buffer.toString('base64');
+          console.log(`   ✅ Image ${index + 1} downloaded (${contentType}, ${buffer.length} bytes)`);
+          
           return {
             type: 'image_url',
             image_url: {
