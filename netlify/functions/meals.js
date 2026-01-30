@@ -124,26 +124,47 @@ export async function handler(event, context) {
     const normalizedFilters = Array.isArray(filters) ? filters.filter((f) => typeof f === 'string') : [];
 
     const systemPrompt =
-      'You are a nutrition-aware meal planner. You generate realistic, well-known meals based on available ingredients. Only suggest real recipes that exist in cookbooks or are commonly made. You must return ONLY valid JSON.';
+      'You are a smart, practical meal-planning assistant. ' +
+      'Using ONLY the foods detected from the user\'s fridge scan plus common pantry staples ' +
+      '(salt, pepper, oil, butter, basic spices), generate EXACTLY 10 distinct meal ideas. ' +
+      'Help the user realistically decide what to eat using what they already have.';
 
     const userPrompt =
-      'Given these available ingredients:\n' +
+      'Available ingredients from fridge scan:\n' +
       ingredients.map((x) => `- ${x}`).join('\n') +
       `\n\nUser goal: ${normalizedGoal}` +
       `\nDietary filters: ${normalizedFilters.length ? normalizedFilters.join(', ') : 'none'}` +
-      '\n\nReturn ONLY JSON with this exact shape:' +
+      '\n\nMEAL MIX (STRICT):' +
+      '\n- 5 simple, familiar "safe" meals (easy, comforting, weeknight-friendly)' +
+      '\n- 3 creative but realistic "interesting" meals' +
+      '\n- 2 slightly elevated "stretch" meals that feel impressive but achievable' +
+      '\n\nRULES:' +
+      '\n- Each meal must clearly use at least one scanned ingredient' +
+      '\n- Do NOT invent exotic or specialty ingredients unless explicitly present' +
+      '\n- Do NOT repeat the same main protein more than twice' +
+      '\n- Avoid repeating cuisines or cooking styles' +
+      '\n- No meal should feel like a minor variation of another' +
+      '\n- Meal names should be short and clear (no emojis, no overly fancy wording)' +
+      '\n\nOUTPUT FORMAT (STRICT):' +
+      '\nReturn ONLY valid JSON with this exact structure:' +
       '\n{' +
-      '"meals": [' +
-      '{"id": string, "name": string, "description": string, "prepTime": string, "difficulty": "Easy"|"Medium"|"Hard", "healthScore": number, "calories": number, "protein": number, "carbs": number, "fat": number, "ingredients": string[]}' +
-      ']}' +
-      '\n\nRules:' +
-      '\n- Generate exactly 5 meals.' +
-      '\n- Only suggest real, well-known recipes that actually exist (e.g., "Chicken Stir-Fry", "Spaghetti Carbonara", "Greek Salad"). Do NOT invent creative fusion dishes or made-up meal names.' +
-      '\n- Meals should mostly use the provided ingredients; you may add up to 3 common pantry staples per meal (salt, pepper, oil, water, etc.).' +
-      '\n- calories/protein/carbs/fat should be plausible estimates (integers, in grams for macros).' +
-      '\n- healthScore must be an integer between 0-100 (where 100 is extremely healthy, 70-85 is moderately healthy, below 70 is less healthy).' +
-      '\n- Keep prepTime like "25 min".' +
-      '\n- No markdown, no extra keys.';
+      '\n  "meals": [' +
+      '\n    {' +
+      '\n      "id": string,' +
+      '\n      "name": string (short and clear),' +
+      '\n      "description": string (one concise sentence explaining the meal),' +
+      '\n      "prepTime": string (e.g., "25 min"),' +
+      '\n      "difficulty": "Easy"|"Medium"|"Hard",' +
+      '\n      "healthScore": number (0-100, integer),' +
+      '\n      "calories": number (integer),' +
+      '\n      "protein": number (grams, integer),' +
+      '\n      "carbs": number (grams, integer),' +
+      '\n      "fat": number (grams, integer),' +
+      '\n      "ingredients": string[] (key ingredients used from scan)' +
+      '\n    }' +
+      '\n  ]' +
+      '\n}' +
+      '\n\nGenerate exactly 10 meals following the meal mix structure. Be friendly, confident, practical, slightly premium but never pretentious.';
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -179,7 +200,7 @@ export async function handler(event, context) {
 
     const sanitized = meals
       .filter((m) => m && typeof m.name === 'string')
-      .slice(0, 5)
+      .slice(0, 10)
       .map((m, idx) => {
         const mealName = String(m.name).trim();
         // Generate a recipe search URL using AllRecipes (reliable recipe site)

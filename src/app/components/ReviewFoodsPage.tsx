@@ -649,7 +649,7 @@ export function ReviewFoodsPage() {
             }`}
             style={{ fontWeight: 700, fontSize: '1.125rem' }}
           >
-            Generate 5 Meals
+            Generate 10 Meals
           </button>
         </div>
 

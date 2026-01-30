@@ -841,7 +841,7 @@ export function ResultsPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl lg:text-5xl mb-3" style={{ fontWeight: 700, color: '#2C2C2C' }}>
-            Here are 5 meals you can make
+            Here are 10 meals you can make
           </h1>
           <p className="text-gray-600 text-lg">
             All recipes use your available ingredients
@@ -1331,7 +1331,7 @@ export function ResultsPage() {
             style={{ fontWeight: 700, fontSize: '1.125rem' }}
           >
             <RefreshCw size={20} />
-            {generating ? 'Generating…' : 'Generate 5 More'}
+            {generating ? 'Generating…' : 'Generate 10 More'}
           </button>
           <Link
             to="/"
@@ -1367,7 +1367,7 @@ export function ResultsPage() {
                 Generating Meals...
               </h3>
               <p className="text-gray-600">
-                Creating 5 new personalized meal recommendations based on your ingredients
+                Creating 10 new personalized meal recommendations based on your ingredients
               </p>
               <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-500">
                 <Sparkles className="w-4 h-4 text-[#2ECC71]" />
