@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 import { v2 as cloudinary } from 'cloudinary';
 import Stripe from 'stripe';
-import { getBucket, getFirestore, admin as firebaseAdmin } from './firebaseAdmin.js';
+import { getBucket, getFirestore, getAuth, admin as firebaseAdmin } from './firebaseAdmin.js';
 import { computeRecipeImageId } from './recipeImageId.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 
@@ -19,9 +19,9 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware - CORS with explicit origins for mobile app
+// Middleware - CORS (allow all origins for mobile app compatibility)
 app.use(cors({
-  origin: ['http://localhost:8081', 'http://localhost:8082', 'http://localhost:3000', 'https://platelyai.com', 'https://www.platelyai.com', 'https://myplately.com', 'https://www.myplately.com'],
+  origin: true, // Allow all origins (mobile apps don't send proper Origin headers)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -43,6 +43,32 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/api', uploadRoutes);
 
 // Initialize Firebase Admin lazily via helpers when needed.
+
+// ============================================================================
+// HEALTH CHECK ENDPOINT
+// ============================================================================
+app.get('/health', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'platelyai',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    endpoints: [
+      '/health',
+      '/api/scan',
+      '/api/categorize-food',
+      '/api/meals',
+      '/api/meal-image',
+      '/api/upload',
+      '/api/session/:id',
+      '/api/sessions',
+      '/api/create-checkout-session',
+      '/api/create-billing-portal-session',
+      '/api/stripe-webhook',
+    ],
+  });
+});
 
 // ============================================================================
 // HELPERS
@@ -233,22 +259,50 @@ app.get('/api/session/:sessionId', (req, res) => {
 });
 
 // ============================================================================
+// FIREBASE AUTH MIDDLEWARE
+// ============================================================================
+const verifyFirebaseToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'unauthorized', message: 'Missing or invalid authorization header' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+    const auth = getAuth();
+    const decodedToken = await auth.verifyIdToken(idToken);
+    req.user = decodedToken;
+    req.userId = decodedToken.uid;
+    next();
+  } catch (error) {
+    console.error('❌ Token verification failed:', error.message);
+    return res.status(401).json({ error: 'unauthorized', message: 'Invalid or expired token' });
+  }
+};
+
+// ============================================================================
 // API ENDPOINT 4: Scan images to detect foods (Vision model)
 // POST /api/scan
-// Body: { imageUrls: string[], userId?: string }
+// Body: { imageUrls: string[] | images: Array<{url: string}>, userId?: string }
 // Returns: { foods: [{ name: string, category: string }], scanId: string }
 // ============================================================================
-app.post('/api/scan', async (req, res) => {
+app.post('/api/scan', verifyFirebaseToken, async (req, res) => {
   const db = getFirestore();
   const scanId = uuidv4();
   let scanRunRef = null;
 
   try {
-    const { imageUrls, userId } = req.body;
+    // Support both imageUrls and images[] formats
+    let imageUrls = req.body.imageUrls;
+    if (!imageUrls && Array.isArray(req.body.images)) {
+      imageUrls = req.body.images.map(img => typeof img === 'string' ? img : img.url);
+    }
+    const userId = req.body.userId || req.userId; // Use authenticated user if not provided
 
     console.log('🧠 /api/scan called');
     console.log('   imageUrls:', Array.isArray(imageUrls) ? imageUrls.length : 'not-an-array');
-    console.log('   userId:', userId || 'not-provided');
+    console.log('   userId:', userId);
+    console.log('   authenticated as:', req.user?.email || req.userId);
 
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
       return res.status(400).json({ error: 'Missing imageUrls (array)' });
@@ -1200,15 +1254,26 @@ app.post('/api/stripe-webhook', async (req, res) => {
 // START SERVER
 // ============================================================================
 app.listen(PORT, () => {
-  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
-  console.log(`📝 Use ngrok to expose: ngrok http ${PORT}`);
-  console.log(`📋 Available routes:`);
-  console.log(`   GET  /api/sessions`);
-  console.log(`   POST /api/upload`);
-  console.log(`   GET  /api/session/:sessionId`);
-  console.log(`   POST /api/scan`);
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`🚀 PlatelyAI Backend Server Started`);
+  console.log(`${'='.repeat(60)}`);
+  console.log(`📍 PORT: ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`\n✅ Routes mounted:`);
+  console.log(`   GET  /health (public)`);
+  console.log(`   POST /api/scan (🔒 auth required)`);
+  console.log(`   POST /api/categorize-food`);
   console.log(`   POST /api/meals`);
   console.log(`   POST /api/meal-image`);
+  console.log(`   POST /api/uploads/init (🔒 auth required)`);
+  console.log(`   POST /api/uploads/complete (🔒 auth required)`);
+  console.log(`   GET  /api/sessions`);
+  console.log(`   GET  /api/session/:sessionId`);
   console.log(`   POST /api/create-checkout-session`);
+  console.log(`   POST /api/create-billing-portal-session`);
   console.log(`   POST /api/stripe-webhook`);
+  console.log(`\n🔑 Firebase Auth: ${process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? 'Configured' : '⚠️  Missing'}`);
+  console.log(`🤖 OpenAI API: ${process.env.OPENAI_API_KEY ? 'Configured' : '⚠️  Missing'}`);
+  console.log(`💳 Stripe API: ${process.env.STRIPE_SECRET_KEY ? 'Configured' : 'Not configured'}`);
+  console.log(`${'='.repeat(60)}\n`);
 });
