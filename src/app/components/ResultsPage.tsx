@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Clock, ChefHat, TrendingUp, Flame, RefreshCw, ExternalLink, SlidersHorizontal, ChevronDown, Lock, ChevronUp, Plus, X, Loader2, Info, Sparkles } from 'lucide-react';
+import { Clock, ChefHat, TrendingUp, Flame, RefreshCw, ExternalLink, SlidersHorizontal, ChevronDown, Lock, ChevronUp, Plus, X, Loader2, Info, Sparkles, Star, Zap, Award } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 import { getOrCreateUserEntitlements } from '../../lib/firestoreUsers';
 import { canSeeImages, canSeeFullMacros, canSeeRecipeLinks } from '../../lib/entitlements';
 import type { UserEntitlements } from '../../lib/entitlements';
 import { LockedFeature } from './LockedFeature';
 import { UpgradeModal } from './UpgradeModal';
+import { 
+  getRecommendedMeal, 
+  getRecommendationExplanation, 
+  getMealTags, 
+  sortMealsByVibe, 
+  computeIngredientOverlap,
+  type VibeFilter,
+  type MealTag 
+} from '../../utils/resultsRanking';
 
 type Meal = {
   id: string;
@@ -337,9 +346,22 @@ export function ResultsPage() {
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
   const [regeneratingMeal, setRegeneratingMeal] = useState<string | null>(null);
+  const [activeVibeFilter, setActiveVibeFilter] = useState<VibeFilter | null>(null);
   const { user } = useAuth();
 
   const filtersArray = useMemo(() => Array.from(filters), [filters]);
+  
+  // Compute recommended meal and displayed meals
+  const recommendedMeal = useMemo(() => getRecommendedMeal(meals), [meals]);
+  const displayedMeals = useMemo(() => {
+    if (!activeVibeFilter) return meals;
+    return sortMealsByVibe(meals, activeVibeFilter);
+  }, [meals, activeVibeFilter]);
+  
+  const recommendationExplanation = useMemo(() => {
+    if (!recommendedMeal || meals.length === 0) return '';
+    return getRecommendationExplanation(recommendedMeal, meals);
+  }, [recommendedMeal, meals]);
   
   // Force-generate IDs for meals that don't have them (fixes old sessionStorage data)
   useEffect(() => {
@@ -1001,11 +1023,95 @@ export function ResultsPage() {
           </div>
         )}
 
+        {/* Best Choice Recommendation Header */}
+        {recommendedMeal && meals.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-[#2ECC71] to-[#1E8449] rounded-2xl p-6 shadow-lg">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                  <Award className="text-[#2ECC71]" size={24} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-white text-lg" style={{ fontWeight: 700 }}>
+                    Best choice right now
+                  </h2>
+                  <Star className="text-yellow-300 fill-yellow-300" size={18} />
+                </div>
+                <p className="text-white text-2xl mb-2" style={{ fontWeight: 700 }}>
+                  {recommendedMeal.name}
+                </p>
+                <p className="text-white text-opacity-90 text-sm mb-4">
+                  {recommendationExplanation}
+                </p>
+                {recipesUnlocked && recommendedMeal.recipeUrl && (
+                  <a
+                    href={recommendedMeal.recipeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#2ECC71] rounded-xl hover:bg-gray-50 transition-all shadow-md hover:shadow-lg"
+                    style={{ fontWeight: 700 }}
+                  >
+                    <ChefHat size={20} />
+                    Make this tonight
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Vibe Filters */}
+        {meals.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-3 items-center">
+            <span className="text-sm text-gray-600" style={{ fontWeight: 600 }}>Quick filters:</span>
+            {(['Quick', 'High Protein', 'Light', 'Comfort'] as VibeFilter[]).map((vibe) => {
+              const isActive = activeVibeFilter === vibe;
+              const icons = {
+                'Quick': Zap,
+                'High Protein': TrendingUp,
+                'Light': Flame,
+                'Comfort': ChefHat
+              };
+              const Icon = icons[vibe];
+              
+              return (
+                <button
+                  key={vibe}
+                  onClick={() => setActiveVibeFilter(isActive ? null : vibe)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-[#2ECC71] text-white shadow-md'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:border-[#2ECC71] hover:bg-gray-50'
+                  }`}
+                  style={{ fontWeight: 500 }}
+                >
+                  <Icon size={16} />
+                  {vibe}
+                </button>
+              );
+            })}
+            {activeVibeFilter && (
+              <button
+                onClick={() => setActiveVibeFilter(null)}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Meals Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {meals.map((meal, index) => {
+          {displayedMeals.map((meal, index) => {
             const mealKey = String(index);
             const imageUrl = mealImageUrls[mealKey];
+            
+            // Compute tags and ingredient overlap for this meal
+            const mealTags = getMealTags(meal, meals, recommendedMeal?.id || '');
+            const ingredientOverlap = computeIngredientOverlap(meal.ingredients, ingredients);
             
             // ALWAYS log for debugging
             console.log(`[RENDER] Meal ${index}:`, meal.name, 'ID:', meal.id);
@@ -1084,7 +1190,41 @@ export function ResultsPage() {
                   <h3 className="text-xl mb-2" style={{ fontWeight: 700, color: '#2C2C2C' }}>
                     {getMealTitle(meal)}
                   </h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{meal.description}</p>
+                  
+                  {/* Smart Tags */}
+                  {mealTags.length > 0 && (
+                    <div className="flex gap-2 mb-3">
+                      {mealTags.map((tag) => {
+                        const tagStyles = {
+                          'Best match': 'bg-[#2ECC71] text-white',
+                          'Fastest': 'bg-purple-100 text-purple-700',
+                          'High protein': 'bg-blue-100 text-blue-700',
+                          'Lowest calories': 'bg-orange-100 text-orange-700',
+                        };
+                        return (
+                          <span
+                            key={tag}
+                            className={`px-2 py-1 rounded-full text-xs ${tagStyles[tag]}`}
+                            style={{ fontWeight: 600 }}
+                          >
+                            {tag}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{meal.description}</p>
+                  
+                  {/* Ingredient Overlap Line */}
+                  <div className="mb-4 flex items-center gap-1 text-xs text-gray-500">
+                    <ChefHat size={14} className="text-[#2ECC71]" />
+                    {ingredientOverlap.count > 0 && ingredients.length > 0 ? (
+                      <span>Uses {ingredientOverlap.count} of your scanned ingredients</span>
+                    ) : (
+                      <span>Built from your scanned ingredients</span>
+                    )}
+                  </div>
 
                   {/* Meta Info */}
                   <div className="flex flex-wrap gap-2 mb-4">
